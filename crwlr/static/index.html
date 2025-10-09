@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRWLR - Terms & Privacy Policy Analyzer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>CRWLR - Terms & Privacy Policy Analyzer</h1>
+    <form id="f">
+        <input type="text" name="url" placeholder="https://example.com" required>
+        <button type="submit">Analyze</button>
+    </form>
+    <pre id="out"></pre>
+    <script>
+        document.getElementById('f').onsubmit = async e => {
+            e.preventDefault();
+            const seed = new FormData(e.target).get('url');
+            const output = document.getElementById('out');
+            output.textContent = 'Analyzing...';
+            output.className = 'loading';
+            
+            try {
+                const r = await fetch(`/analyze?url=${encodeURIComponent(seed)}`);
+                const data = await r.json();
+                output.textContent = JSON.stringify(data, null, 2);
+                output.className = '';
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+                output.className = '';
+            }
+        };
+    </script>
+</body>
+</html>
