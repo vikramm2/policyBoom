@@ -19,7 +19,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-app.mount("/static", StaticFiles(directory="crwlr/static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class Tag(BaseModel):
@@ -62,7 +62,7 @@ async def health():
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return FileResponse("crwlr/static/index.html")
+    return FileResponse("static/index.html")
 
 
 @app.get("/analyze", response_model=AnalyzeResponse)

@@ -14,7 +14,12 @@ def extract_main_content(html: str) -> str:
 def sectionize(html: str) -> list[dict]:
     soup = BeautifulSoup(html, 'lxml')
     
-    scope = soup.find('main') or soup.find('article') or soup.find(id='content') or soup.find(class_='content') or soup
+    main_elem = soup.find('main')
+    article_elem = soup.find('article')
+    content_id = soup.find(id='content')
+    content_class = soup.find(class_='content')
+    
+    scope = main_elem or article_elem or content_id or content_class or soup
     
     sections = []
     current_heading = ""
