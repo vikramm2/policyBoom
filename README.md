@@ -4,6 +4,7 @@
 
 policyBoom is a web service that automatically discovers, fetches, and analyzes Terms of Service and Privacy Policy pages from websites. Given a seed URL, the system crawls the same domain to find policy documents, extracts their content, and identifies concerning clauses using pattern-based rules. The service is designed for resilience - network failures, timeouts, or malformed pages never crash the service. Results are cached in SQLite for performance.
 
+[Video Demo]: (https://drive.google.com/file/d/1zTQFvBngjs65efzHXXfX8FVL4f2w_uMJ/view?usp=sharing)
 
 ## User Preferences
 
