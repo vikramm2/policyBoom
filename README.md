@@ -1,7 +1,9 @@
 # policyBoom - Terms & Privacy Policy Analyzer
-<img width="1245" height="971" alt="Screenshot 2025-10-08 at 11 03 46 PM" src="https://github.com/user-attachments/assets/dad86659-bddf-4a62-bc8f-095bede02c64" />
 
 ## Overview
+
+<img width="1227" height="959" alt="Screenshot 2025-10-08 at 11 04 32 PM" src="https://github.com/user-attachments/assets/8985fd71-2c25-4e58-9e48-3ab87dfa8bbc" />
+
 
 policyBoom is a web service that automatically discovers, fetches, and analyzes Terms of Service and Privacy Policy pages from websites. Given a seed URL, the system crawls the same domain to find policy documents, extracts their content, and identifies concerning clauses using pattern-based rules. The service is designed for resilience - network failures, timeouts, or malformed pages never crash the service. Results are cached in SQLite for performance.
 [
