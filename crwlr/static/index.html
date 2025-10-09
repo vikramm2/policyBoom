@@ -68,18 +68,32 @@
     <script>
         document.getElementById('f').onsubmit = async e => {
             e.preventDefault();
-            const seed = new FormData(e.target).get('url');
+            let seed = new FormData(e.target).get('url').trim();
+            
+            // Auto-add https:// if no protocol specified
+            if (!seed.match(/^https?:\/\//i)) {
+                seed = 'https://' + seed;
+            }
+            
             const output = document.getElementById('out');
-            output.textContent = 'Analyzing...';
+            output.textContent = `Analyzing ${seed}...\nThis may take a few seconds.`;
             output.className = 'loading';
             
             try {
                 const r = await fetch(`/analyze?url=${encodeURIComponent(seed)}`);
                 const data = await r.json();
-                output.textContent = JSON.stringify(data, null, 2);
+                
+                // Format results nicely
+                if (data.results && data.results.length > 0) {
+                    output.textContent = JSON.stringify(data, null, 2);
+                } else if (data.errors && data.errors.length > 0) {
+                    output.textContent = `Analysis completed with errors:\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    output.textContent = JSON.stringify(data, null, 2);
+                }
                 output.className = '';
             } catch (error) {
-                output.textContent = `Error: ${error.message}`;
+                output.textContent = `Error: ${error.message}\n\nPlease check the URL and try again.`;
                 output.className = '';
             }
         };
