@@ -44,4 +44,4 @@ externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["uvicorn", "crwlr.app.api:app", "--host=0.0.0.0", "--port=5000"]
+run = ["uvicorn", "crwlr.app.api:app", "--host=0.0.0.0"]
