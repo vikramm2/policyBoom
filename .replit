@@ -40,4 +40,4 @@ externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "cd crwlr && uvicorn app.api:app --host=0.0.0.0 --port=5000"]
+run = ["sh", "-c", "uvicorn app.api:app --host=0.0.0.0 --port=5000"]
