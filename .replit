@@ -34,7 +34,11 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 33133
+externalPort = 3000
+
 [deployment]
-build = ["sh", "-c", "cd crwlr && pip install -r requirements.txt"]
-run = ["sh", "-c", "cd crwlr && uvicorn app.api:app --host 0.0.0.0 --port 5000"]
+build = ["sh", "-c", "pip install -r crwlr/requirements.txt"]
+run = ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 deploymentTarget = "autoscale"
