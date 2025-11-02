@@ -1,5 +1,6 @@
 import time
 from typing import Literal
+from pathlib import Path
 from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -13,13 +14,16 @@ from .analyze import analyze_sections
 from .storage import init_db, store_document, store_findings, get_cached_result
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_DIR = BASE_DIR / "static"
+
 app = FastAPI(
     title="CRWLR - Terms & Privacy Policy Analyzer",
     description="Discovers and analyzes Terms of Service and Privacy Policy pages",
     version="0.1.0"
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 class Tag(BaseModel):
@@ -62,7 +66,7 @@ async def health():
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return FileResponse("static/index.html")
+    return FileResponse(str(STATIC_DIR / "index.html"))
 
 
 @app.get("/analyze", response_model=AnalyzeResponse)
