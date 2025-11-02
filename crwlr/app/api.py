@@ -1,6 +1,4 @@
 import time
-import os
-from pathlib import Path
 from typing import Literal
 from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
@@ -21,8 +19,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-STATIC_DIR = Path(__file__).parent.parent / "static"
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class Tag(BaseModel):
@@ -65,7 +62,7 @@ async def health():
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return FileResponse(str(STATIC_DIR / "index.html"))
+    return FileResponse("static/index.html")
 
 
 @app.get("/analyze", response_model=AnalyzeResponse)
