@@ -16,4 +16,6 @@ dependencies = [
     "httpx>=0.28.1",
     "click>=8.3.0",
     "rich>=14.2.0",
+    "groq>=0.33.0",
+    "llama-stack-client>=0.2.12",
 ]
