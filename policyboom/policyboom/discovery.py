@@ -1,0 +1,143 @@
+"""Multi-domain and subdomain discovery engine."""
+
+import httpx
+from bs4 import BeautifulSoup
+import tldextract
+from typing import Set
+from urllib.parse import urljoin, urlparse
+
+
+class Discovery:
+    """Discovers legal documents across domains and subdomains."""
+    
+    POLICY_KEYWORDS = [
+        'privacy', 'terms', 'legal', 'policy', 'agreement',
+        'tos', 'service', 'conditions', 'eula', 'gdpr', 'ccpa'
+    ]
+    
+    COMMON_PATHS = [
+        '/privacy', '/privacy-policy', '/privacypolicy',
+        '/terms', '/terms-of-service', '/tos', '/termsofservice',
+        '/legal', '/legal/privacy', '/legal/terms',
+        '/policies/privacy', '/policies/terms',
+        '/about/privacy', '/about/terms'
+    ]
+    
+    def __init__(self, timeout: int = 15, max_docs: int = 10):
+        """Initialize discovery engine."""
+        self.timeout = timeout
+        self.max_docs = max_docs
+        self.client = httpx.Client(timeout=timeout, follow_redirects=True)
+    
+    def discover(self, seed_url: str) -> list[dict]:
+        """
+        Discover all policy documents for a domain.
+        
+        Returns list of dicts with url, doc_type, confidence.
+        """
+        if not seed_url.startswith(('http://', 'https://')):
+            seed_url = f'https://{seed_url}'
+        
+        discovered = set()
+        policy_urls = []
+        
+        try:
+            response = self.client.get(seed_url)
+            response.raise_for_status()
+            
+            discovered_urls = self._extract_policy_links(seed_url, response.text)
+            discovered.update(discovered_urls)
+            
+            fallback_urls = self._generate_fallback_urls(seed_url)
+            discovered.update(fallback_urls)
+            
+            for url in list(discovered)[:self.max_docs]:
+                doc_type = self._classify_document_type(url)
+                confidence = self._calculate_confidence(url)
+                policy_urls.append({
+                    'url': url,
+                    'doc_type': doc_type,
+                    'confidence': confidence
+                })
+        
+        except Exception as e:
+            print(f"Discovery error for {seed_url}: {e}")
+        
+        return policy_urls
+    
+    def _extract_policy_links(self, base_url: str, html: str) -> Set[str]:
+        """Extract policy-related links from HTML."""
+        links = set()
+        
+        try:
+            soup = BeautifulSoup(html, 'lxml')
+            base_domain = tldextract.extract(base_url)
+            
+            for anchor in soup.find_all('a', href=True):
+                href = anchor.get('href', '')
+                absolute_url = urljoin(base_url, href)
+                
+                if self._is_same_registrable_domain(absolute_url, base_url):
+                    if self._is_probable_policy_url(absolute_url):
+                        links.add(absolute_url)
+        
+        except Exception:
+            pass
+        
+        return links
+    
+    def _generate_fallback_urls(self, base_url: str) -> Set[str]:
+        """Generate common policy URL patterns."""
+        parsed = urlparse(base_url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+        
+        fallbacks = set()
+        for path in self.COMMON_PATHS:
+            fallbacks.add(f"{base}{path}")
+        
+        return fallbacks
+    
+    def _is_same_registrable_domain(self, url1: str, url2: str) -> bool:
+        """Check if two URLs share the same registrable domain."""
+        ext1 = tldextract.extract(url1)
+        ext2 = tldextract.extract(url2)
+        return (ext1.domain == ext2.domain and ext1.suffix == ext2.suffix)
+    
+    def _is_probable_policy_url(self, url: str) -> bool:
+        """Check if URL likely contains policy content."""
+        url_lower = url.lower()
+        return any(keyword in url_lower for keyword in self.POLICY_KEYWORDS)
+    
+    def _classify_document_type(self, url: str) -> str:
+        """Classify document type based on URL."""
+        url_lower = url.lower()
+        
+        if 'privacy' in url_lower:
+            return 'Privacy Policy'
+        elif 'terms' in url_lower or 'tos' in url_lower:
+            return 'Terms of Service'
+        elif 'cookie' in url_lower:
+            return 'Cookie Policy'
+        elif 'eula' in url_lower:
+            return 'EULA'
+        elif 'acceptable' in url_lower or 'aup' in url_lower:
+            return 'Acceptable Use Policy'
+        else:
+            return 'Legal Document'
+    
+    def _calculate_confidence(self, url: str) -> float:
+        """Calculate confidence score for URL."""
+        url_lower = url.lower()
+        score = 0.5
+        
+        if '/privacy' in url_lower or '/terms' in url_lower:
+            score += 0.3
+        
+        keyword_count = sum(1 for kw in self.POLICY_KEYWORDS if kw in url_lower)
+        score += min(keyword_count * 0.1, 0.2)
+        
+        return min(score, 1.0)
+    
+    def close(self):
+        """Close HTTP client."""
+        self.client.close()
