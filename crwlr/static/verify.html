@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Clause Verification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .snippet-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .snippet-label {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 8px;
+        }
+        .instructions {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background: #1976D2;
+        }
+        .url-display {
+            color: #666;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .countdown {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔍 Clause Verification</h1>
+        
+        <p>PolicyBoom has detected a concerning clause in this policy. To verify and view the exact clause location:</p>
+        
+        <div class="snippet-box">
+            <div class="snippet-label">Search for this text:</div>
+            <div id="snippet"></div>
+        </div>
+        
+        <div class="instructions">
+            <strong>How to verify:</strong>
+            <ol>
+                <li>Click the button below to open the policy page</li>
+                <li>Press <kbd>Ctrl+F</kbd> (Windows/Linux) or <kbd>Cmd+F</kbd> (Mac)</li>
+                <li>The search box will auto-fill with the text above</li>
+                <li>Press Enter to jump to the clause</li>
+            </ol>
+        </div>
+        
+        <div class="url-display">
+            <strong>Target URL:</strong> <span id="targetUrl"></span>
+        </div>
+        
+        <a id="openButton" class="button" target="_blank">Open Policy Page & Search</a>
+        
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <script>
+        // Parse URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const targetUrl = params.get('url');
+        const snippet = params.get('snippet');
+        
+        // Display the information
+        document.getElementById('snippet').textContent = snippet || 'No snippet provided';
+        document.getElementById('targetUrl').textContent = targetUrl || 'No URL provided';
+        
+        // Set up the open button
+        const openButton = document.getElementById('openButton');
+        
+        if (targetUrl && snippet) {
+            // Create a URL that will open the page
+            openButton.href = targetUrl;
+            
+            // Try to use the browser's find functionality
+            openButton.onclick = function(e) {
+                // Copy snippet to clipboard for easy Ctrl+F
+                navigator.clipboard.writeText(snippet).then(() => {
+                    console.log('Snippet copied to clipboard');
+                }).catch(err => {
+                    console.log('Could not copy to clipboard:', err);
+                });
+                
+                // Open the page
+                const newWindow = window.open(targetUrl, '_blank');
+                
+                // Try to trigger find (this works in some browsers)
+                if (newWindow) {
+                    setTimeout(() => {
+                        try {
+                            // This attempts to use the browser's find API
+                            // Note: This may not work due to cross-origin restrictions
+                            newWindow.find(snippet);
+                        } catch (err) {
+                            console.log('Auto-search failed (expected due to security), user will need to Ctrl+F');
+                        }
+                    }, 1000);
+                }
+            };
+            
+            // Auto-redirect after 5 seconds
+            let countdown = 5;
+            const countdownEl = document.getElementById('countdown');
+            
+            const updateCountdown = () => {
+                countdownEl.textContent = `Auto-opening in ${countdown} seconds... (or click the button now)`;
+                countdown--;
+                
+                if (countdown < 0) {
+                    openButton.click();
+                }
+            };
+            
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        } else {
+            openButton.style.display = 'none';
+            document.querySelector('.instructions').innerHTML = '<strong>Error:</strong> Missing URL or snippet parameter.';
+        }
+    </script>
+</body>
+</html>

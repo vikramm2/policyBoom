@@ -69,6 +69,11 @@ async def root():
     return FileResponse(str(STATIC_DIR / "index.html"))
 
 
+@app.get("/verify", include_in_schema=False)
+async def verify():
+    return FileResponse(str(STATIC_DIR / "verify.html"))
+
+
 @app.get("/analyze", response_model=AnalyzeResponse)
 async def analyze(
     url: str = Query(..., description="Seed URL to analyze"),
