@@ -1,8 +1,122 @@
-# CRWLR - Terms & Privacy Policy Analyzer
+# PolicyBoom - Enterprise Legal Risk Intelligence CLI
 
 ## Overview
 
-CRWLR is a web service that automatically discovers, fetches, and analyzes Terms of Service and Privacy Policy pages from websites. Given a seed URL, the system crawls the same domain to find policy documents, extracts their content, and identifies concerning clauses using pattern-based rules. The service is designed for resilience - network failures, timeouts, or malformed pages never crash the service. Results are cached in SQLite for performance.
+This repository contains two projects:
+
+1. **PolicyBoom** (Beta) - Enterprise-grade CLI tool for analyzing legal policies across multi-domain company infrastructure
+2. **CRWLR** (Legacy) - Original web service prototype for policy analysis
+
+## PolicyBoom Beta
+
+PolicyBoom is a Python CLI tool that analyzes Terms of Service and Privacy Policies with multi-domain scanning capabilities. It provides a fluent dot-notation API for enterprise legal professionals to identify concerning clauses across a company's entire domain landscape.
+
+### Key Features
+
+- **Multi-Domain Scanning**: Discovers policies across root domain, subdomains, and product-specific paths
+- **Clause-Level Analysis**: Each clause gets a unique ID with full metadata (section, paragraph, document type)
+- **Severity Scoring**: High/Medium/Low risk categorization
+- **Category Tagging**: Arbitration, data sale, tracking, location, retention, children's data (COPPA)
+- **Fluent API**: Chainable dot-notation commands (`scan().summarizeHigh().category()`)
+- **Local Storage**: SQLite database (~/.policyboom/scans.db) for instant cached results
+- **Beautiful Output**: Rich terminal formatting with tables and colors
+- **PyPI Ready**: Automated publishing workflow with GitHub Actions
+
+### Installation
+
+```bash
+# From PyPI (once published)
+pip install policyboom
+
+# From source
+cd policyboom
+pip install -e .
+```
+
+### Usage Examples
+
+```bash
+# CLI with dot-notation
+policyboom exec "scan('slack.com').summarizeHigh()"
+policyboom exec "scan('stripe.com').summarizeHigh().category('arbitration')"
+policyboom exec "scan('example.com').summarizeAll().metadata()"
+
+# Get help
+policyboom --help
+policyboom guide
+policyboom examples
+
+# Export results
+policyboom export <scan_id> --format json
+```
+
+```python
+# Python library
+from policyboom import scan
+
+result = scan("slack.com").summarizeHigh().category("arbitration")
+for finding in result.findings:
+    print(f"{finding.severity}: {finding.snippet}")
+
+result.export("output.json", format="json")
+```
+
+### Architecture
+
+**Project Structure:**
+```
+policyboom/
+├── policyboom/
+│   ├── __init__.py
+│   ├── scanner.py      # Fluent API implementation
+│   ├── discovery.py    # Multi-domain crawler
+│   ├── extraction.py   # Clause-level parsing
+│   ├── analysis.py     # Severity scoring & tagging
+│   ├── database.py     # Local SQLite storage
+│   ├── models.py       # Data models
+│   └── cli.py          # Click-based CLI
+├── pyproject.toml      # Package configuration
+├── setup.py            # Backward compatibility
+├── DEPLOYMENT.md       # Deployment guide
+└── README.md
+```
+
+**Core Pipeline:**
+1. **Discovery** → Finds all policy documents across domains/subdomains
+2. **Extraction** → Parses HTML into individual clauses with metadata
+3. **Analysis** → Applies severity rules and category tags
+4. **Storage** → Caches in local SQLite for instant retrieval
+5. **Output** → Returns via fluent API or exports to JSON/CSV
+
+**Technology Stack:**
+- Python 3.11+
+- Click (CLI framework)
+- Rich (terminal formatting)
+- httpx (async HTTP client)
+- BeautifulSoup4 + lxml (HTML parsing)
+- readability-lxml (content extraction)
+- tldextract (domain handling)
+- SQLite (local database)
+
+### Security Features
+
+- **Safe Expression Parser**: CLI uses regex-based parsing instead of eval()
+- **Whitelist-Only Methods**: Only documented methods are allowed in exec command
+- **No Remote Code Execution**: Input validation prevents arbitrary code execution
+
+### Deployment
+
+See `policyboom/DEPLOYMENT.md` for:
+- Local installation guide
+- PyPI publishing workflow (automated via GitHub Actions)
+- Python library usage examples
+- Troubleshooting tips
+
+---
+
+## CRWLR (Legacy Prototype)
+
+Original web service prototype. See below for documentation.
 
 ## User Preferences
 

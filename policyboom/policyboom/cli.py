@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """PolicyBoom CLI - Command-line interface for policy analysis."""
 
+import ast
+import re
 import click
 from rich.console import Console
 from rich.table import Table
@@ -301,20 +303,17 @@ def export(scan_id: str, format: str, output: str):
 
 def _safe_eval_scan_expression(expression: str):
     """
-    Safely evaluate scan expression using AST parsing.
+    Safely evaluate scan expression using simple parsing.
     Only allows scan() calls with method chaining.
     """
-    import ast
-    import re
-    
-    try:
-        tree = ast.parse(expression, mode='eval')
-    except SyntaxError:
-        raise SyntaxError("Invalid expression syntax")
-    
-    domain = _extract_domain_from_ast(tree)
-    if not domain:
+    if not expression.strip().startswith('scan('):
         raise ValueError("Expression must start with scan('domain.com')")
+    
+    domain_match = re.search(r"scan\(['\"]([^'\"]+)['\"]\)", expression)
+    if not domain_match:
+        raise ValueError("Could not extract domain from scan() call")
+    
+    domain = domain_match.group(1)
     
     result = scan(domain)
     
@@ -340,23 +339,6 @@ def _safe_eval_scan_expression(expression: str):
             raise ValueError(f"Unknown method: {method_name}")
     
     return result
-
-
-def _extract_domain_from_ast(tree):
-    """Extract domain from scan() call in AST."""
-    if isinstance(tree.body, ast.Call):
-        if isinstance(tree.body.func, ast.Name) and tree.body.func.id == 'scan':
-            if tree.body.args and isinstance(tree.body.args[0], ast.Constant):
-                return tree.body.args[0].value
-        elif isinstance(tree.body.func, ast.Attribute):
-            base = tree.body.func
-            while isinstance(base, ast.Attribute):
-                base = base.value
-            if isinstance(base, ast.Call) and isinstance(base.func, ast.Name):
-                if base.func.id == 'scan' and base.args:
-                    if isinstance(base.args[0], ast.Constant):
-                        return base.args[0].value
-    return None
 
 
 def _extract_method_chain_from_expression(expression: str) -> list[tuple[str, list]]:
