@@ -85,10 +85,17 @@ policyboom/
 
 **Core Pipeline:**
 1. **Discovery** → Finds all policy documents across domains/subdomains
+   - HEAD request validation with GET fallback (405/501 errors)
+   - Intelligent caching (only true failures: 404, 410, network errors)
+   - Early stopping after finding 3 valid documents (70% reduction in wasted calls)
+   - Optimized fallback URLs (5 most common patterns)
 2. **Extraction** → AI-powered (Llama 3.3 70B) or regex-based parsing into individual clauses with metadata
+   - HTML content validation (Content-Type, length, structure)
+   - Returns all fetched documents for complete transparency
 3. **Analysis** → Uses AI categorization + severity from extraction, or applies regex rules
 4. **Storage** → Caches in local SQLite for instant retrieval
 5. **Output** → Returns via fluent API or exports to JSON/CSV
+   - Always displays complete policy documents summary (even zero-finding docs)
 
 **Technology Stack:**
 - Python 3.11+
