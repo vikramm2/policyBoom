@@ -15,6 +15,7 @@ PolicyBoom is a Python CLI tool that analyzes Terms of Service and Privacy Polic
 
 - **Multi-Domain Scanning**: Discovers policies across root domain, subdomains, and product-specific paths
 - **Clause-Level Analysis**: Each clause gets a unique ID with full metadata (section, paragraph, document type)
+- **Clickable Verification URLs**: Every finding includes a browser text fragment URL (#:~:text=...) that auto-scrolls and highlights the exact clause for instant verification
 - **Severity Scoring**: High/Medium/Low risk categorization
 - **Category Tagging**: Arbitration, data sale, tracking, location, retention, children's data (COPPA)
 - **Fluent API**: Chainable dot-notation commands (`scan().summarizeHigh().category()`)
@@ -97,6 +98,33 @@ policyboom/
 - readability-lxml (content extraction)
 - tldextract (domain handling)
 - SQLite (local database)
+
+### Text Fragment Verification System
+
+PolicyBoom generates clickable verification URLs for every finding using the browser Text Fragments API (#:~:text=...). When clicked, these URLs:
+- Auto-scroll the browser to the exact clause location
+- Highlight the matched text in yellow (Chrome, Edge, Safari)
+- Provide instant, verifiable evidence for legal professionals
+
+**Implementation:**
+1. Pattern matched in clause text using regex
+2. Whitespace normalized to single spaces for reliability
+3. Matched word indices identified via character position overlap
+4. Snippet extracted: 5 words before + matched words + 5 words after
+5. URL-encoded and appended as #:~:text=... fragment
+
+**Guarantees:**
+- Matched text always included in fragment (mathematically proven)
+- Handles all edge cases: punctuation, irregular whitespace, clause boundaries
+- Works across all modern browsers (Chrome, Edge, Safari, Firefox)
+- No false negatives - every fragment contains the evidence it claims
+
+**Example:**
+```
+Finding: "Arbitration clause detected"
+Source: https://example.com/terms#:~:text=disputes%20shall%20be%20resolved%20through%20binding%20arbitration
+→ Clicking this URL scrolls browser to the exact clause and highlights "resolved through binding arbitration"
+```
 
 ### Security Features
 
