@@ -1,0 +1,203 @@
+Below is a refined, enterprise-ready set of User Stories for your PolicyBoom API – pivoting from domain-limited crawling to a scalable, modular, company-wide legal-risk analysis API that legal professionals can rely on.
+These stories are written in Gherkin-style (Given/When/Then) for clarity, testability, and alignment with agile development. They also reflect API-first design, modular dot-notation access, severity prioritization, and audit-ready traceability.
+
+Epic: Enterprise Legal Risk Intelligence API for Privacy & Terms Analysis
+As a legal professional or compliance officer, I want a robust, scalable API that scans all user-facing legal agreements tied to a company domain (including subdomains and product-specific pages) and returns structured, actionable insights on concerning clauses — so I can prioritize remediation, assign ownership, and maintain audit trails.
+
+Refined & Prioritized User Stories
+
+US-001: Discover All Legal Agreements for a Company Domain
+gherkin
+As a system
+When a root domain is provided (e.g., "slack.com")
+Then it MUST crawl and identify ALL user-facing legal documents (Privacy Policy, Terms of Service, EULA, etc.) across:
+  - Root domain
+  - Subdomains (e.g., gov.slack.com)
+  - Product-specific paths (e.g., /solutions/govslack)
+And return a normalized JSON manifest with:
+  - Document type
+  - URL
+  - Last modified date
+  - Confidence score
+API Endpoint: GET /v1/scan?domain=slack.com
+
+US-002: Parse & Extract Clauses into Structured JSON
+gherkin
+As a system
+When a legal document is processed
+Then it MUST extract individual clauses and generate structured JSON with:
+  - clause_id
+  - raw_text
+  - paragraph_index
+  - section_title
+  - document_url
+  - last_updated
+  - detected_concerns[] (array of concern types)
+  - severity (High/Medium/Low)
+Internal Processing: Uses NLP + legal clause classifiers (your existing logic)
+
+US-003: Summarize All Concerning Clauses by Severity
+gherkin
+As a legal professional
+When I query a company domain or specific agreement
+Then I receive a summary of ALL concerning clauses grouped by severity (High/Medium/Low)
+With count, category breakdown, and top 3 examples per level
+API Example:
+js
+policyboom("slack.com").summarizeAll()
+policyboom("slack.com/solutions/govslack").summarizeHigh()
+
+US-004: Modular Dot-Notation API Access (Core UX)
+gherkin
+As an API consumer
+I can chain modular dot-notation commands to drill down into results
+Such that:
+  .summarizeHigh() → returns high-severity summary
+  .summarizeHigh().category("data-sharing") → filters by category
+  .summarizeHigh().category("data-sharing").findLink() → returns source URL
+  .summarizeHigh().metadata() → returns doc metadata
+Valid Chains:
+js
+policyboom("slack.com").summarizeHigh.category.findLink
+policyboom("https://slack.com/legal").summarizeMedium.metadata
+policyboom("gov.slack.com").summarizeAll.category("children-data")
+Implementation: REST + JSON over HTTP with chainable query params or SDK wrapper
+
+US-005: Filter by Legal Concern Category
+gherkin
+As a legal professional
+I can filter clauses by predefined concern categories:
+  - data_retention
+  - childrens_data (COPPA)
+  - arbitration_waiver
+  - third_party_sharing
+  - location_tracking
+  - ad_targeting
+  - data_sale
+So I know which internal team (Privacy, Product, Ads, Legal Ops) to route for review
+API:
+js
+policyboom("example.com").summarizeHigh.category("arbitration_waiver")
+
+US-006: Retrieve Full Supporting Text for Any Clause
+gherkin
+As a legal professional
+When I select a concerning clause
+Then I can retrieve the EXACT original text from the source document
+With highlighted risky phrases (if available)
+API:
+js
+policyboom("slack.com").clause("clause_87").text()
+
+US-007: Get Clickable Source Link to Clause in Original Document
+gherkin
+As a legal professional
+For any concerning clause
+I receive a deep-link to the exact section/paragraph in the original document
+(using fragment identifiers or scroll-to-paragraph logic)
+Output:
+json
+"source_link": "https://slack.com/terms#section-12-data-retention"
+
+US-008: Retrieve Metadata for Audit & Compliance
+gherkin
+As a compliance officer
+For any clause or document
+I can retrieve:
+  - Document last updated date
+  - Paragraph number / section
+  - Document type (Privacy Policy, ToS, etc.)
+  - Crawl timestamp
+  - Model version used for analysis
+API:
+js
+policyboom("slack.com/legal").summarizeHigh.metadata
+
+US-009: Export Results in Enterprise Formats
+gherkin
+As a legal ops manager
+I can export scan results in:
+  - JSON (API default)
+  - CSV (for Excel/Sheets)
+  - PDF Report (branded, with executive summary)
+So I can share with stakeholders or archive for audits
+API:
+GET /v1/export?domain=slack.com&format=pdf&severity=high
+
+US-010: Rate Limiting, Authentication & Audit Logging
+gherkin
+As a system administrator
+All API requests require:
+  - API key authentication
+  - Rate limiting (e.g., 100 req/hour free, 10k for enterprise)
+  - Full audit log: who, what, when, IP
+So usage is secure and traceable
+
+US-011: Cache & Incremental Updates
+gherkin
+As a system
+When a domain is re-scanned
+Then only fetch documents changed since last crawl (using ETag/Last-Modified)
+And return delta + full summary
+To reduce cost and improve performance
+
+US-012: Webhook Notifications on Critical Changes
+gherkin
+As a compliance team
+I can subscribe to webhooks
+When a HIGH-severity clause appears or worsens in a tracked domain
+I receive real-time alert with summary and link
+
+API Design (Modular Dot-Notation SDK Example)
+js
+// JavaScript SDK (conceptual)
+const pb = policyboom;
+
+// Full scan + high severity summary
+pb("slack.com").summarizeHigh()
+
+// Drill down by category
+pb("slack.com").summarizeHigh().category("arbitration_waiver").findLink()
+
+// Metadata only
+pb("https://slack.com/terms").summarizeAll().metadata()
+
+// Raw clause
+pb("slack.com").clause("c-123").text()
+Under the hood: REST API with query chaining
+GET /v1/analyze/slack.com/summarize/high?category=arbitration_waiver&include=link
+
+Severity Definitions (Standardized)
+Severity
+Criteria
+High
+Immediate legal risk (e.g., class action waiver, COPPA violation, data sale without opt-out)
+Medium
+Compliance friction (e.g., vague retention, 3rd party sharing without list)
+Low
+Best practice gap (e.g., no update frequency, weak transparency)
+
+
+Non-Functional Requirements (NFRs)
+NFR
+Requirement
+Scalability
+Handle 10,000 domains/day
+Accuracy
+>95% clause detection (validated quarterly)
+Latency
+<5s for cached domain, <30s for fresh scan
+Uptime
+99.9% SLA
+Data Retention
+90 days (configurable)
+GDPR/CCPA
+No PII stored; opt-out for crawls
+
+
+Next Steps
+Build /v1/scan endpoint → returns document manifest
+Standardize JSON schema for clauses (use your GitHub parser)
+Implement severity engine + category tagging
+Create SDK wrapper with dot-notation (JS, Python)
+Add auth, rate limits, webhooks
