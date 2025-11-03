@@ -9,10 +9,11 @@ This repository contains two projects:
 
 ## PolicyBoom Beta
 
-PolicyBoom is a Python CLI tool that analyzes Terms of Service and Privacy Policies with multi-domain scanning capabilities. It provides a fluent dot-notation API for enterprise legal professionals to identify concerning clauses across a company's entire domain landscape.
+PolicyBoom is a Python CLI tool that analyzes Terms of Service and Privacy Policies with multi-domain scanning capabilities and **AI-powered extraction using Meta Llama 3.3 70B**. It provides a fluent dot-notation API for enterprise legal professionals to identify concerning clauses across a company's entire domain landscape.
 
 ### Key Features
 
+- **AI-Powered Extraction**: Uses Meta Llama 3.3 70B via Together AI for intelligent clause understanding (auto-falls back to regex if no API key)
 - **Multi-Domain Scanning**: Discovers policies across root domain, subdomains, and product-specific paths
 - **Clause-Level Analysis**: Each clause gets a unique ID with full metadata (section, paragraph, document type)
 - **Clickable Verification URLs**: Every finding includes a browser text fragment URL (#:~:text=...) that auto-scrolls and highlights the exact clause for instant verification
@@ -84,16 +85,18 @@ policyboom/
 
 **Core Pipeline:**
 1. **Discovery** → Finds all policy documents across domains/subdomains
-2. **Extraction** → Parses HTML into individual clauses with metadata
-3. **Analysis** → Applies severity rules and category tags
+2. **Extraction** → AI-powered (Llama 3.3 70B) or regex-based parsing into individual clauses with metadata
+3. **Analysis** → Uses AI categorization + severity from extraction, or applies regex rules
 4. **Storage** → Caches in local SQLite for instant retrieval
 5. **Output** → Returns via fluent API or exports to JSON/CSV
 
 **Technology Stack:**
 - Python 3.11+
+- OpenAI SDK (Together AI client)
+- Meta Llama 3.3 70B (via Together AI free tier)
 - Click (CLI framework)
 - Rich (terminal formatting)
-- httpx (async HTTP client)
+- httpx (HTTP client)
 - BeautifulSoup4 + lxml (HTML parsing)
 - readability-lxml (content extraction)
 - tldextract (domain handling)

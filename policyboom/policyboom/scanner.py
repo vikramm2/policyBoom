@@ -3,10 +3,12 @@
 from .models import Scan, ScanResult, Severity, Category, Finding
 from .discovery import Discovery
 from .extraction import Extraction
+from .llama_extraction import LlamaExtractor
 from .analysis import Analysis
 from .database import Database
 from datetime import datetime
 import uuid
+import os
 from typing import Optional
 
 
@@ -30,7 +32,16 @@ class ScanOperation:
         print(f"🔍 Scanning {self.domain}...")
         
         discovery = Discovery()
-        extraction = Extraction()
+        
+        # Use AI-powered extraction if API key is available, otherwise fallback to regex
+        use_ai = os.getenv("TOGETHER_API_KEY") is not None
+        if use_ai:
+            print("  🤖 Using AI-powered extraction (Llama Stack)")
+            extraction = LlamaExtractor()
+        else:
+            print("  📝 Using regex-based extraction")
+            extraction = Extraction()
+        
         analysis = Analysis()
         
         try:

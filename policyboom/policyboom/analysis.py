@@ -88,9 +88,16 @@ class Analysis:
         """
         Analyze a single clause for concerning patterns.
         
+        If clause has AI metadata, use that. Otherwise apply regex rules.
         Returns list of findings with full evidence and metadata.
         """
         findings = []
+        
+        # If AI already categorized this clause, use AI metadata
+        if clause.ai_category and clause.ai_severity:
+            return self._create_ai_finding(clause)
+        
+        # Otherwise, use regex-based analysis
         text_lower = clause.text.lower()
         
         for rule in self.rules:
@@ -152,3 +159,61 @@ class Analysis:
             snippet = snippet + '...'
         
         return snippet.strip()
+    
+    def _create_ai_finding(self, clause: Clause) -> list[Finding]:
+        """Create finding from AI-extracted clause metadata."""
+        import re
+        
+        # Map AI category to our Category enum
+        category_map = {
+            "dataSale": Category.DATA_SALE,
+            "arbitration": Category.ARBITRATION,
+            "tracking": Category.TRACKING,
+            "location": Category.LOCATION,
+            "retention": Category.RETENTION,
+            "children": Category.CHILDREN_DATA,
+            "childrenData": Category.CHILDREN_DATA,
+        }
+        
+        # Map AI severity to our Severity enum
+        severity_map = {
+            "high": Severity.HIGH,
+            "medium": Severity.MEDIUM,
+            "low": Severity.LOW,
+        }
+        
+        category = category_map.get(clause.ai_category, Category.DATA_SALE)
+        severity = severity_map.get(clause.ai_severity, Severity.MEDIUM)
+        
+        # Create snippet (first 200 chars)
+        snippet = clause.text[:200]
+        if len(clause.text) > 200:
+            snippet = '...' + snippet + '...'
+        
+        # Use exact clause text as fragment (AI extracted it correctly)
+        # Normalize whitespace first
+        normalized_text = re.sub(r'\s+', ' ', clause.text.strip())
+        
+        # Use first 10 words for fragment to ensure it matches page
+        words = normalized_text.split()[:10]
+        fragment_text = ' '.join(words)
+        
+        fragment_url = generate_text_fragment_url(clause.document_url, fragment_text)
+        
+        finding = Finding(
+            clause_id=clause.id,
+            category=category,
+            severity=severity,
+            text=clause.text,
+            snippet=snippet,
+            section_title=clause.section_title,
+            document_url=fragment_url,
+            matched_pattern=clause.ai_reason or "AI-detected clause",
+            document_type=clause.document_type,
+            full_text=clause.text,
+            context_before=clause.context_before,
+            context_after=clause.context_after,
+            last_updated=clause.last_updated
+        )
+        
+        return [finding]

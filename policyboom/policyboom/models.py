@@ -36,6 +36,9 @@ class Clause:
     context_before: str = ""
     context_after: str = ""
     findings: list[dict] = field(default_factory=list)
+    ai_category: Optional[str] = None
+    ai_severity: Optional[str] = None
+    ai_reason: Optional[str] = None
 
 
 @dataclass

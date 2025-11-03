@@ -22,6 +22,7 @@ policyboom exec "scan('example.com').summarizeAll()"
 
 ## Features
 
+- 🤖 **AI-Powered Extraction** - Uses Meta Llama 3.3 70B via Together AI for intelligent clause understanding
 - 🌐 **Multi-Domain Scanning** - Discovers policies across root domain, subdomains, and product paths
 - 🔍 **Clause-Level Analysis** - Extracts individual clauses with unique IDs and metadata
 - ⚖️ **Severity Scoring** - Categorizes findings as High, Medium, or Low risk
@@ -37,6 +38,19 @@ policyboom exec "scan('example.com').summarizeAll()"
 ```bash
 pip install policyboom
 ```
+
+### Setting Up AI Extraction
+
+PolicyBoom uses Meta Llama 3.3 70B for intelligent clause extraction via Together AI's free tier:
+
+1. Get your free API key from https://api.together.ai/settings/api-keys
+2. Set the environment variable:
+   ```bash
+   export TOGETHER_API_KEY="your-api-key-here"
+   ```
+3. Run PolicyBoom - it will automatically use AI extraction when the API key is present
+
+**Fallback**: If no API key is set, PolicyBoom uses regex-based extraction (less accurate but works offline).
 
 ## Usage
 
