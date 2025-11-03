@@ -38,8 +38,8 @@ def generate_text_fragment_url(base_url: str, text: str, max_words: int = None) 
         # Use the full snippet for precise matching
         fragment_text = clean_text
     
-    # Lowercase for better matching
-    fragment_text = fragment_text.lower()
+    # IMPORTANT: Do NOT lowercase - text fragments are case-sensitive
+    # and must match the exact case as it appears on the live page
     
     # URL encode the fragment
     encoded_fragment = quote(fragment_text)

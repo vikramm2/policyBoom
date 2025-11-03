@@ -144,17 +144,18 @@ class Extraction:
             paragraphs = soup.find_all(['p', 'li'])
             
             for idx, para in enumerate(paragraphs[:100]):
-                text = para.get_text(strip=True)
+                # Use separator=' ' to preserve spaces between inline elements
+                text = para.get_text(separator=' ', strip=True)
                 if len(text) > 50:
                     clause_id = self._generate_clause_id(url, idx, text)
                     
                     context_before = ""
                     context_after = ""
                     if idx > 0:
-                        prev_para = paragraphs[idx-1].get_text(strip=True)
+                        prev_para = paragraphs[idx-1].get_text(separator=' ', strip=True)
                         context_before = prev_para if len(prev_para) > 20 else ""
                     if idx < len(paragraphs) - 1:
-                        next_para = paragraphs[idx+1].get_text(strip=True)
+                        next_para = paragraphs[idx+1].get_text(separator=' ', strip=True)
                         context_after = next_para if len(next_para) > 20 else ""
                     
                     clause = Clause(
@@ -189,7 +190,8 @@ class Extraction:
                 current_heading = element.get_text(strip=True)
             
             elif element.name in ['p', 'li']:
-                text = element.get_text(strip=True)
+                # Use separator=' ' to preserve spaces between inline elements like <strong>, <em>, etc.
+                text = element.get_text(separator=' ', strip=True)
                 if text:
                     current_texts.append(text)
         

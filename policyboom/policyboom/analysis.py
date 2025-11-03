@@ -105,42 +105,36 @@ class Analysis:
                 # Normalize whitespace in the entire clause first
                 normalized_text = snippet_re.sub(r'\s+', ' ', clause.text)
                 
-                # Find the match in the normalized text
+                # Find the match in the normalized text (using case-insensitive search)
+                # This ensures pattern matching works while preserving original case
                 normalized_match = rule.pattern.search(normalized_text.lower())
                 if normalized_match:
-                    # Get the matched substring
-                    matched_substring = normalized_text[normalized_match.start():normalized_match.end()]
+                    # Extract snippet directly using character positions
+                    # This is simpler and more reliable than word-based extraction
                     
-                    # Split clause into words
-                    words = normalized_text.split()
+                    # Get 50 characters before and after the match for context
+                    context_chars = 50
+                    snippet_start = max(0, normalized_match.start() - context_chars)
+                    snippet_end = min(len(normalized_text), normalized_match.end() + context_chars)
                     
-                    # Find which words contain or surround the match
-                    char_pos = 0
-                    match_word_start = 0
-                    match_word_end = len(words)
+                    # Extract the raw snippet with match in the middle
+                    raw_snippet = normalized_text[snippet_start:snippet_end]
                     
-                    for i, word in enumerate(words):
-                        word_start = char_pos
-                        word_end = char_pos + len(word)
-                        
-                        # If this word overlaps with match start
-                        if word_start <= normalized_match.start() < word_end:
-                            match_word_start = i
-                        
-                        # If this word overlaps with match end
-                        if word_start < normalized_match.end() <= word_end:
-                            match_word_end = i + 1
-                            break
-                        
-                        char_pos = word_end + 1  # +1 for space
+                    # Trim to complete words at the boundaries
+                    # Only trim if we're mid-word (not at text boundaries)
+                    if snippet_start > 0 and raw_snippet and not raw_snippet[0].isspace():
+                        # Find first space and trim before it
+                        first_space = raw_snippet.find(' ')
+                        if first_space > 0:
+                            raw_snippet = raw_snippet[first_space + 1:]
                     
-                    # Take 5 words before match, the matched words, and 5 words after
-                    context_words = 5
-                    snippet_start_word = max(0, match_word_start - context_words)
-                    snippet_end_word = min(len(words), match_word_end + context_words)
+                    if snippet_end < len(normalized_text) and raw_snippet and not raw_snippet[-1].isspace():
+                        # Find last space and trim after it
+                        last_space = raw_snippet.rfind(' ')
+                        if last_space > 0:
+                            raw_snippet = raw_snippet[:last_space]
                     
-                    # Build snippet centered on matched words
-                    unique_snippet = ' '.join(words[snippet_start_word:snippet_end_word])
+                    unique_snippet = raw_snippet.strip()
                 else:
                     # Fallback: use first 10 words
                     unique_snippet = ' '.join(normalized_text.split()[:10])
