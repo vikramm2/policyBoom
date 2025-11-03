@@ -123,8 +123,25 @@
             // Create a URL that will open the page
             openButton.href = targetUrl;
             
+            // Track if we've already opened to prevent duplicates
+            let hasOpened = false;
+            let countdownInterval = null;
+            
             // Try to use the browser's find functionality
             openButton.onclick = function(e) {
+                e.preventDefault(); // Prevent anchor default navigation
+                
+                if (hasOpened) {
+                    return; // Prevent multiple opens
+                }
+                hasOpened = true;
+                
+                // Stop the countdown timer
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('countdown').textContent = 'Opening policy page...';
+                }
+                
                 // Copy snippet to clipboard for easy Ctrl+F
                 navigator.clipboard.writeText(snippet).then(() => {
                     console.log('Snippet copied to clipboard');
@@ -133,20 +150,7 @@
                 });
                 
                 // Open the page
-                const newWindow = window.open(targetUrl, '_blank');
-                
-                // Try to trigger find (this works in some browsers)
-                if (newWindow) {
-                    setTimeout(() => {
-                        try {
-                            // This attempts to use the browser's find API
-                            // Note: This may not work due to cross-origin restrictions
-                            newWindow.find(snippet);
-                        } catch (err) {
-                            console.log('Auto-search failed (expected due to security), user will need to Ctrl+F');
-                        }
-                    }, 1000);
-                }
+                window.open(targetUrl, '_blank');
             };
             
             // Auto-redirect after 5 seconds
@@ -154,16 +158,17 @@
             const countdownEl = document.getElementById('countdown');
             
             const updateCountdown = () => {
-                countdownEl.textContent = `Auto-opening in ${countdown} seconds... (or click the button now)`;
-                countdown--;
-                
-                if (countdown < 0) {
+                if (countdown > 0) {
+                    countdownEl.textContent = `Auto-opening in ${countdown} seconds... (or click the button now)`;
+                    countdown--;
+                } else {
+                    clearInterval(countdownInterval);
                     openButton.click();
                 }
             };
             
             updateCountdown();
-            setInterval(updateCountdown, 1000);
+            countdownInterval = setInterval(updateCountdown, 1000);
         } else {
             openButton.style.display = 'none';
             document.querySelector('.instructions').innerHTML = '<strong>Error:</strong> Missing URL or snippet parameter.';
