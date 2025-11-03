@@ -22,6 +22,7 @@ class ScanOperation:
         self.scan_id = str(uuid.uuid4())
         self._findings = None
         self._scan = None
+        self._documents = []  # Track all fetched documents
         self._executed = False
     
     def _execute(self):
@@ -68,6 +69,9 @@ class ScanOperation:
                 document = extraction.extract_document(url, doc_type)
                 if not document:
                     continue
+                
+                # Track all documents, even if they have no findings
+                self._documents.append(document)
                 
                 doc_id = self.db.save_document(self.scan_id, document)
                 
@@ -173,14 +177,14 @@ class FilteredScanOperation:
         
         findings = self._get_filtered_findings()
         
-        document_urls = list(set(f.document_url for f in findings))
-        last_updated_dates = {}
-        document_types = {}
-        
-        for finding in findings:
-            if finding.document_url not in last_updated_dates:
-                last_updated_dates[finding.document_url] = finding.last_updated
-                document_types[finding.document_url] = finding.document_type
+        # Build policy documents list from ALL fetched documents, not just ones with findings
+        policy_documents = []
+        for doc in self.parent._documents:
+            policy_documents.append({
+                'url': doc.url,
+                'type': doc.doc_type,
+                'last_updated': doc.last_updated
+            })
         
         metadata = {
             'scan_id': self.parent.scan_id,
@@ -188,14 +192,7 @@ class FilteredScanOperation:
             'total_findings': len(findings),
             'severity_breakdown': self._get_severity_breakdown(findings),
             'category_breakdown': self._get_category_breakdown(findings),
-            'policy_documents': [
-                {
-                    'url': url,
-                    'type': document_types.get(url, 'Unknown'),
-                    'last_updated': last_updated_dates.get(url)
-                }
-                for url in document_urls
-            ]
+            'policy_documents': policy_documents
         }
         
         return metadata
@@ -283,6 +280,18 @@ class FilteredScanOperation:
                     output.append(f"   Last Updated: {finding.last_updated}")
                 output.append(f"   Snippet: {finding.snippet[:150]}...")
                 output.append(f"   Source: {finding.document_url}\n")
+        
+        # Always show policy documents analyzed
+        policy_docs = result.metadata.get('policy_documents', [])
+        if policy_docs:
+            output.append(f"{'─'*80}")
+            output.append(f"Policy Documents Analyzed:\n")
+            for doc in policy_docs:
+                doc_type = doc.get('type', 'Unknown')
+                last_updated = doc.get('last_updated', 'Unknown')
+                url = doc.get('url', '')
+                output.append(f"  • {doc_type} (Updated: {last_updated})")
+                output.append(f"    {url}\n")
         
         output.append(f"{'='*80}\n")
         

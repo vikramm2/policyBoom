@@ -15,19 +15,22 @@ class Discovery:
         'tos', 'service', 'conditions', 'eula', 'gdpr', 'ccpa'
     ]
     
+    # Optimized: Most common paths first, removed rarely-used ones
     COMMON_PATHS = [
-        '/privacy', '/privacy-policy', '/privacypolicy',
-        '/terms', '/terms-of-service', '/tos', '/termsofservice',
-        '/legal', '/legal/privacy', '/legal/terms',
-        '/policies/privacy', '/policies/terms',
-        '/about/privacy', '/about/terms'
+        '/privacy',
+        '/terms',
+        '/legal',
+        '/privacy-policy',
+        '/terms-of-service',
     ]
     
-    def __init__(self, timeout: int = 15, max_docs: int = 10):
+    def __init__(self, timeout: int = 15, max_docs: int = 10, max_valid_docs: int = 3):
         """Initialize discovery engine."""
         self.timeout = timeout
         self.max_docs = max_docs
+        self.max_valid_docs = max_valid_docs  # Stop after finding this many valid docs
         self.client = httpx.Client(timeout=timeout, follow_redirects=True)
+        self.failed_urls = set()  # Cache failed URLs
     
     def discover(self, seed_url: str) -> list[dict]:
         """
@@ -40,6 +43,7 @@ class Discovery:
         
         discovered = set()
         policy_urls = []
+        valid_count = 0
         
         try:
             response = self.client.get(seed_url)
@@ -51,14 +55,22 @@ class Discovery:
             fallback_urls = self._generate_fallback_urls(seed_url)
             discovered.update(fallback_urls)
             
+            # Validate URLs with HEAD requests and stop early
             for url in list(discovered)[:self.max_docs]:
-                doc_type = self._classify_document_type(url)
-                confidence = self._calculate_confidence(url)
-                policy_urls.append({
-                    'url': url,
-                    'doc_type': doc_type,
-                    'confidence': confidence
-                })
+                # Skip if we already found enough valid documents
+                if valid_count >= self.max_valid_docs:
+                    break
+                
+                # Check if URL exists before adding
+                if self._url_exists(url):
+                    doc_type = self._classify_document_type(url)
+                    confidence = self._calculate_confidence(url)
+                    policy_urls.append({
+                        'url': url,
+                        'doc_type': doc_type,
+                        'confidence': confidence
+                    })
+                    valid_count += 1
         
         except Exception as e:
             print(f"Discovery error for {seed_url}: {e}")
@@ -137,6 +149,42 @@ class Discovery:
         score += min(keyword_count * 0.1, 0.2)
         
         return min(score, 1.0)
+    
+    def _url_exists(self, url: str) -> bool:
+        """
+        Check if URL exists using HEAD request with GET fallback.
+        
+        Returns True for 2xx and 3xx responses, False for 404/errors.
+        Caches only true failures (404, network errors) to avoid retries.
+        """
+        if url in self.failed_urls:
+            return False
+        
+        try:
+            # Try HEAD request first (lightweight)
+            response = self.client.head(url, timeout=5)
+            
+            # Accept 2xx and 3xx status codes
+            if 200 <= response.status_code < 400:
+                return True
+            
+            # If HEAD not allowed (405/501), fallback to GET with minimal download
+            if response.status_code in (405, 501):
+                # Try GET request but limit download
+                response = self.client.get(url, timeout=5)
+                if 200 <= response.status_code < 400:
+                    return True
+            
+            # True failures: 404, 403, 500, etc.
+            if response.status_code in (404, 410):
+                self.failed_urls.add(url)
+            
+            return False
+        
+        except Exception:
+            # Network errors, timeouts, DNS failures - mark as failed
+            self.failed_urls.add(url)
+            return False
     
     def close(self):
         """Close HTTP client."""

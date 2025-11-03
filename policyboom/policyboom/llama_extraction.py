@@ -48,6 +48,10 @@ class LlamaExtractor:
             response = self.http_client.get(url)
             response.raise_for_status()
             
+            # Validate content before processing
+            if not self._is_valid_html_content(response):
+                return None
+            
             html = response.text
             
             # Extract metadata
@@ -59,14 +63,15 @@ class LlamaExtractor:
             
             if not clauses:
                 print(f"No clauses extracted from {url}")
-                return None
             
+            # Always return a Document, even if no clauses found
+            # This ensures all fetched documents appear in metadata
             document = Document(
                 url=url,
                 doc_type=doc_type,
                 title=title,
                 last_updated=last_updated,
-                clauses=clauses
+                clauses=clauses  # May be empty list
             )
             
             return document
@@ -74,6 +79,34 @@ class LlamaExtractor:
         except Exception as e:
             print(f"AI extraction error for {url}: {e}")
             return None
+    
+    def _is_valid_html_content(self, response: httpx.Response) -> bool:
+        """
+        Validate that response contains valid HTML suitable for AI extraction.
+        
+        Checks Content-Type, length, and basic HTML structure.
+        """
+        # Check Content-Type header
+        content_type = response.headers.get('content-type', '').lower()
+        if 'html' not in content_type:
+            return False
+        
+        # Check content length (minimum 500 chars, max 5MB)
+        content = response.text
+        if len(content) < 500 or len(content) > 5_000_000:
+            return False
+        
+        # Check for basic HTML structure (has opening tags)
+        if not ('<html' in content.lower() or '<body' in content.lower() or '<div' in content.lower()):
+            return False
+        
+        # Check it's not an error page (common error page indicators)
+        content_lower = content.lower()
+        error_indicators = ['404 not found', 'page not found', 'error occurred', 'access denied']
+        if any(indicator in content_lower[:1000] for indicator in error_indicators):
+            return False
+        
+        return True
     
     def _extract_clauses_with_ai(self, html: str, url: str, doc_type: str, last_updated: Optional[str]) -> list[Clause]:
         """Use Llama AI to intelligently extract and categorize clauses."""
@@ -84,6 +117,10 @@ class LlamaExtractor:
         
         # Get clean text with preserved spacing
         text_content = soup.get_text(separator=' ', strip=True)
+        
+        # Validate text content has enough substance
+        if len(text_content) < 200:
+            return []
         
         # Limit to reasonable size (Llama can handle long context but be efficient)
         if len(text_content) > 20000:
@@ -137,7 +174,11 @@ Return valid JSON only, no markdown formatting:"""
             )
             
             # Parse response
-            content = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            if not content:
+                return []
+            
+            content = content.strip()
             
             # Remove markdown code blocks if present
             if content.startswith("```"):
@@ -173,7 +214,8 @@ Return valid JSON only, no markdown formatting:"""
         
         except json.JSONDecodeError as e:
             print(f"Failed to parse AI response as JSON: {e}")
-            print(f"Response was: {content[:500]}")
+            if 'content' in locals():
+                print(f"Response was: {content[:500]}")
             return []
         except Exception as e:
             print(f"AI extraction failed: {e}")
