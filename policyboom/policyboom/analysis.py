@@ -2,6 +2,7 @@
 
 import re
 from .models import Clause, Finding, Severity, Category
+from .utils import generate_text_fragment_url
 from typing import Optional
 
 
@@ -97,6 +98,9 @@ class Analysis:
             if match:
                 snippet = self._extract_snippet(clause.text, match.start(), match.end())
                 
+                # Generate text fragment URL for browser auto-scroll
+                fragment_url = generate_text_fragment_url(clause.document_url, clause.text)
+                
                 finding = Finding(
                     clause_id=clause.id,
                     category=rule.category,
@@ -104,10 +108,9 @@ class Analysis:
                     text=clause.text,
                     snippet=snippet,
                     section_title=clause.section_title,
-                    document_url=clause.document_url,
+                    document_url=fragment_url,
                     matched_pattern=rule.label,
                     document_type=clause.document_type,
-                    paragraph_number=clause.paragraph_index,
                     full_text=clause.text,
                     context_before=clause.context_before,
                     context_after=clause.context_after,

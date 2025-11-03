@@ -125,8 +125,6 @@ class Database:
             
             if 'document_type' not in finding_columns:
                 cursor.execute("ALTER TABLE findings ADD COLUMN document_type TEXT")
-            if 'paragraph_number' not in finding_columns:
-                cursor.execute("ALTER TABLE findings ADD COLUMN paragraph_number INTEGER")
             if 'full_text' not in finding_columns:
                 cursor.execute("ALTER TABLE findings ADD COLUMN full_text TEXT")
             if 'context_before' not in finding_columns:
@@ -208,8 +206,8 @@ class Database:
             INSERT INTO findings 
             (clause_id, scan_id, category, severity, text, snippet, 
              section_title, document_url, matched_pattern, document_type,
-             paragraph_number, full_text, context_before, context_after, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             full_text, context_before, context_after, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             finding.clause_id,
             scan_id,
@@ -221,7 +219,6 @@ class Database:
             finding.document_url,
             finding.matched_pattern,
             finding.document_type,
-            finding.paragraph_number,
             finding.full_text,
             finding.context_before,
             finding.context_after,
@@ -284,7 +281,6 @@ class Database:
                 document_url=row['document_url'],
                 matched_pattern=row['matched_pattern'],
                 document_type=row['document_type'] or "Unknown",
-                paragraph_number=row['paragraph_number'] or 0,
                 full_text=row['full_text'] or row['text'],
                 context_before=row['context_before'] or "",
                 context_after=row['context_after'] or "",

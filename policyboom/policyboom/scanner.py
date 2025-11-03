@@ -266,7 +266,7 @@ class FilteredScanOperation:
             
             for i, finding in enumerate(result.findings[:10], 1):
                 output.append(f"{i}. [{finding.severity.value.upper()}] {finding.matched_pattern}")
-                output.append(f"   Section: {finding.section_title} (¶{finding.paragraph_number})")
+                output.append(f"   Section: {finding.section_title}")
                 output.append(f"   Document: {finding.document_type}")
                 if finding.last_updated:
                     output.append(f"   Last Updated: {finding.last_updated}")

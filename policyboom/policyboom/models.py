@@ -40,7 +40,10 @@ class Clause:
 
 @dataclass
 class Finding:
-    """Represents a concerning clause finding with full evidence and source attribution."""
+    """Represents a concerning clause finding with full evidence and source attribution.
+    
+    The document_url includes text fragment (#:~:text=...) for browser auto-scroll and highlighting.
+    """
     clause_id: str
     category: Category
     severity: Severity
@@ -50,7 +53,6 @@ class Finding:
     document_url: str
     matched_pattern: str
     document_type: str = "Unknown"
-    paragraph_number: int = 0
     full_text: str = ""
     context_before: str = ""
     context_after: str = ""
@@ -105,7 +107,6 @@ class ScanResult:
                         "section_title": f.section_title,
                         "document_url": f.document_url,
                         "document_type": f.document_type,
-                        "paragraph_number": f.paragraph_number,
                         "full_text": f.full_text,
                         "context_before": f.context_before,
                         "context_after": f.context_after,
@@ -123,7 +124,7 @@ class ScanResult:
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow([
-                    "Clause ID", "Category", "Severity", "Section", "Paragraph #",
+                    "Clause ID", "Category", "Severity", "Section",
                     "Document Type", "Snippet", "Full Text", "URL", "Last Updated"
                 ])
                 for finding in self.findings:
@@ -132,7 +133,6 @@ class ScanResult:
                         finding.category.value,
                         finding.severity.value,
                         finding.section_title,
-                        finding.paragraph_number,
                         finding.document_type,
                         finding.snippet[:100],
                         finding.full_text[:200] if finding.full_text else "",
