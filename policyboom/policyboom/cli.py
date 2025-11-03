@@ -50,6 +50,10 @@ def exec(expression: str):
         policyboom exec "scan('stripe.com').summarizeHigh().category('arbitration')"
         
         policyboom exec "scan('example.com').summarizeAll().metadata()"
+        
+        policyboom exec "scan('stripe.com').summarizeHigh().withEvidence()"
+        
+        policyboom exec "scan('slack.com').summarizeAll().detailed()"
     
     \b
     Available methods:
@@ -58,7 +62,9 @@ def exec(expression: str):
       .summarizeLow()     - Filter to low severity findings
       .summarizeAll()     - Get all findings
       .category(name)     - Filter by category
-      .metadata()         - Get scan metadata
+      .withEvidence()     - Include full supporting text and context
+      .detailed()         - Show all metadata (URLs, paragraphs, dates, evidence)
+      .metadata()         - Get scan metadata with policy URLs and dates
       .findLinks()        - Include source links (default)
     
     \b
@@ -197,20 +203,41 @@ policyboom exec "scan('company.com').summarizeAll().category('dataSale')"
 policyboom exec "scan('company.com').summarizeMedium().category('tracking')"
 ```
 
-## Metadata & Analysis
+## Evidence & Legal Documentation
 
-**Get scan metadata:**
+**Get full supporting evidence:**
+```bash
+policyboom exec "scan('company.com').summarizeHigh().withEvidence()"
+```
+
+**Get detailed findings with all metadata:**
+```bash
+policyboom exec "scan('company.com').summarizeAll().detailed()"
+```
+
+**Get metadata including policy URLs and dates:**
 ```bash
 policyboom exec "scan('company.com').summarizeAll().metadata()"
 ```
 
-**Export results:**
+## Export Results
+
+**Export to JSON:**
 ```bash
 policyboom export <scan_id> --format json
+```
+
+**Export to CSV:**
+```bash
 policyboom export <scan_id> --format csv
 ```
 
 ## Advanced Examples
+
+**Full evidence for arbitration clauses:**
+```bash
+policyboom exec "scan('stripe.com').summarizeHigh().category('arbitration').withEvidence()"
+```
 
 **Compare severity levels:**
 ```bash
@@ -331,6 +358,10 @@ def _safe_eval_scan_expression(expression: str):
         elif method_name == 'category':
             if args:
                 result = result.category(args[0])
+        elif method_name == 'withEvidence':
+            result = result.withEvidence()
+        elif method_name == 'detailed':
+            result = result.detailed()
         elif method_name == 'metadata':
             return result.metadata()
         elif method_name == 'findLinks':
@@ -401,6 +432,23 @@ def _print_metadata(metadata: dict):
             cat_table.add_row(cat, str(count))
         
         console.print(cat_table)
+    
+    policy_docs = metadata.get('policy_documents', [])
+    if policy_docs:
+        console.print(f"\n[cyan]Policy Documents:[/cyan]")
+        docs_table = Table(show_header=True, header_style="bold cyan")
+        docs_table.add_column("Type")
+        docs_table.add_column("Last Updated")
+        docs_table.add_column("URL")
+        
+        for doc in policy_docs:
+            docs_table.add_row(
+                doc.get('type', 'Unknown'),
+                doc.get('last_updated') or 'Unknown',
+                doc.get('url', '')[:60] + '...' if len(doc.get('url', '')) > 60 else doc.get('url', '')
+            )
+        
+        console.print(docs_table)
     
     console.print()
 

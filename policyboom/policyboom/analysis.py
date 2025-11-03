@@ -87,7 +87,7 @@ class Analysis:
         """
         Analyze a single clause for concerning patterns.
         
-        Returns list of findings.
+        Returns list of findings with full evidence and metadata.
         """
         findings = []
         text_lower = clause.text.lower()
@@ -105,7 +105,13 @@ class Analysis:
                     snippet=snippet,
                     section_title=clause.section_title,
                     document_url=clause.document_url,
-                    matched_pattern=rule.label
+                    matched_pattern=rule.label,
+                    document_type=clause.document_type,
+                    paragraph_number=clause.paragraph_index,
+                    full_text=clause.text,
+                    context_before=clause.context_before,
+                    context_after=clause.context_after,
+                    last_updated=clause.last_updated
                 )
                 
                 findings.append(finding)

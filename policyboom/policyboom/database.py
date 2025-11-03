@@ -58,6 +58,10 @@ class Database:
                 section_title TEXT,
                 paragraph_index INTEGER,
                 document_url TEXT,
+                document_type TEXT,
+                last_updated TEXT,
+                context_before TEXT,
+                context_after TEXT,
                 FOREIGN KEY (document_id) REFERENCES documents(id)
             )
         """)
@@ -74,6 +78,12 @@ class Database:
                 section_title TEXT,
                 document_url TEXT,
                 matched_pattern TEXT,
+                document_type TEXT,
+                paragraph_number INTEGER,
+                full_text TEXT,
+                context_before TEXT,
+                context_after TEXT,
+                last_updated TEXT,
                 FOREIGN KEY (clause_id) REFERENCES clauses(id),
                 FOREIGN KEY (scan_id) REFERENCES scans(id)
             )
@@ -91,7 +101,42 @@ class Database:
             CREATE INDEX IF NOT EXISTS idx_findings_category ON findings(category)
         """)
         
+        self._migrate_schema(cursor)
+        
         self.conn.commit()
+    
+    def _migrate_schema(self, cursor):
+        """Add new columns to existing tables if they don't exist."""
+        try:
+            cursor.execute("PRAGMA table_info(clauses)")
+            clause_columns = {row[1] for row in cursor.fetchall()}
+            
+            if 'document_type' not in clause_columns:
+                cursor.execute("ALTER TABLE clauses ADD COLUMN document_type TEXT")
+            if 'last_updated' not in clause_columns:
+                cursor.execute("ALTER TABLE clauses ADD COLUMN last_updated TEXT")
+            if 'context_before' not in clause_columns:
+                cursor.execute("ALTER TABLE clauses ADD COLUMN context_before TEXT")
+            if 'context_after' not in clause_columns:
+                cursor.execute("ALTER TABLE clauses ADD COLUMN context_after TEXT")
+            
+            cursor.execute("PRAGMA table_info(findings)")
+            finding_columns = {row[1] for row in cursor.fetchall()}
+            
+            if 'document_type' not in finding_columns:
+                cursor.execute("ALTER TABLE findings ADD COLUMN document_type TEXT")
+            if 'paragraph_number' not in finding_columns:
+                cursor.execute("ALTER TABLE findings ADD COLUMN paragraph_number INTEGER")
+            if 'full_text' not in finding_columns:
+                cursor.execute("ALTER TABLE findings ADD COLUMN full_text TEXT")
+            if 'context_before' not in finding_columns:
+                cursor.execute("ALTER TABLE findings ADD COLUMN context_before TEXT")
+            if 'context_after' not in finding_columns:
+                cursor.execute("ALTER TABLE findings ADD COLUMN context_after TEXT")
+            if 'last_updated' not in finding_columns:
+                cursor.execute("ALTER TABLE findings ADD COLUMN last_updated TEXT")
+        except Exception as e:
+            pass
     
     def save_scan(self, scan: Scan):
         """Save a scan to the database."""
@@ -122,7 +167,7 @@ class Database:
             document.url,
             document.doc_type,
             document.title,
-            document.last_updated.isoformat() if document.last_updated else None
+            document.last_updated
         ))
         
         self.conn.commit()
@@ -132,33 +177,39 @@ class Database:
         return doc_id
     
     def save_clause(self, document_id: int, clause: Clause):
-        """Save a clause to the database."""
+        """Save a clause to the database with full evidence."""
         cursor = self.conn.cursor()
         
         cursor.execute("""
             INSERT OR REPLACE INTO clauses 
-            (id, document_id, text, section_title, paragraph_index, document_url)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (id, document_id, text, section_title, paragraph_index, document_url,
+             document_type, last_updated, context_before, context_after)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             clause.id,
             document_id,
             clause.text,
             clause.section_title,
             clause.paragraph_index,
-            clause.document_url
+            clause.document_url,
+            clause.document_type,
+            clause.last_updated,
+            clause.context_before,
+            clause.context_after
         ))
         
         self.conn.commit()
     
     def save_finding(self, scan_id: str, finding: Finding):
-        """Save a finding to the database."""
+        """Save a finding to the database with full evidence and metadata."""
         cursor = self.conn.cursor()
         
         cursor.execute("""
             INSERT INTO findings 
             (clause_id, scan_id, category, severity, text, snippet, 
-             section_title, document_url, matched_pattern)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             section_title, document_url, matched_pattern, document_type,
+             paragraph_number, full_text, context_before, context_after, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             finding.clause_id,
             scan_id,
@@ -168,7 +219,13 @@ class Database:
             finding.snippet,
             finding.section_title,
             finding.document_url,
-            finding.matched_pattern
+            finding.matched_pattern,
+            finding.document_type,
+            finding.paragraph_number,
+            finding.full_text,
+            finding.context_before,
+            finding.context_after,
+            finding.last_updated
         ))
         
         self.conn.commit()
@@ -198,7 +255,7 @@ class Database:
         severity: Optional[Severity] = None,
         category: Optional[Category] = None
     ) -> list[Finding]:
-        """Retrieve findings for a scan with optional filters."""
+        """Retrieve findings for a scan with optional filters, including all evidence."""
         cursor = self.conn.cursor()
         
         query = "SELECT * FROM findings WHERE scan_id = ?"
@@ -225,7 +282,13 @@ class Database:
                 snippet=row['snippet'],
                 section_title=row['section_title'],
                 document_url=row['document_url'],
-                matched_pattern=row['matched_pattern']
+                matched_pattern=row['matched_pattern'],
+                document_type=row['document_type'] or "Unknown",
+                paragraph_number=row['paragraph_number'] or 0,
+                full_text=row['full_text'] or row['text'],
+                context_before=row['context_before'] or "",
+                context_after=row['context_after'] or "",
+                last_updated=row['last_updated']
             ))
         
         return findings

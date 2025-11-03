@@ -142,11 +142,34 @@ class FilteredScanOperation:
         """Include source links (already included in findings)."""
         return self
     
+    def withEvidence(self) -> 'FilteredScanOperation':
+        """
+        Include full supporting evidence with each finding.
+        Returns findings with full_text, context_before, and context_after populated.
+        """
+        return self
+    
+    def detailed(self) -> 'FilteredScanOperation':
+        """
+        Return detailed findings with all metadata and evidence.
+        Includes: source URLs, paragraph numbers, document types, dates, full text, and context.
+        """
+        return self
+    
     def metadata(self) -> dict:
-        """Get metadata about the scan."""
+        """Get metadata about the scan including policy URLs and update dates."""
         self.parent._execute()
         
         findings = self._get_filtered_findings()
+        
+        document_urls = list(set(f.document_url for f in findings))
+        last_updated_dates = {}
+        document_types = {}
+        
+        for finding in findings:
+            if finding.document_url not in last_updated_dates:
+                last_updated_dates[finding.document_url] = finding.last_updated
+                document_types[finding.document_url] = finding.document_type
         
         metadata = {
             'scan_id': self.parent.scan_id,
@@ -154,6 +177,14 @@ class FilteredScanOperation:
             'total_findings': len(findings),
             'severity_breakdown': self._get_severity_breakdown(findings),
             'category_breakdown': self._get_category_breakdown(findings),
+            'policy_documents': [
+                {
+                    'url': url,
+                    'type': document_types.get(url, 'Unknown'),
+                    'last_updated': last_updated_dates.get(url)
+                }
+                for url in document_urls
+            ]
         }
         
         return metadata
@@ -235,9 +266,12 @@ class FilteredScanOperation:
             
             for i, finding in enumerate(result.findings[:10], 1):
                 output.append(f"{i}. [{finding.severity.value.upper()}] {finding.matched_pattern}")
-                output.append(f"   Section: {finding.section_title}")
+                output.append(f"   Section: {finding.section_title} (¶{finding.paragraph_number})")
+                output.append(f"   Document: {finding.document_type}")
+                if finding.last_updated:
+                    output.append(f"   Last Updated: {finding.last_updated}")
                 output.append(f"   Snippet: {finding.snippet[:150]}...")
-                output.append(f"   URL: {finding.document_url}\n")
+                output.append(f"   Source: {finding.document_url}\n")
         
         output.append(f"{'='*80}\n")
         

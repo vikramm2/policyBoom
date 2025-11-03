@@ -35,14 +35,15 @@ class Extraction:
             html = response.text
             
             title = self._extract_title(html)
+            last_updated = self._extract_last_updated(html)
             
-            clauses = self._extract_clauses(html, url)
+            clauses = self._extract_clauses(html, url, doc_type, last_updated)
             
             document = Document(
                 url=url,
                 doc_type=doc_type,
                 title=title,
-                last_updated=datetime.now(),
+                last_updated=last_updated,
                 clauses=clauses
             )
             
@@ -70,8 +71,29 @@ class Extraction:
                 pass
         return "Untitled Document"
     
-    def _extract_clauses(self, html: str, url: str) -> list[Clause]:
-        """Extract individual clauses from HTML."""
+    def _extract_last_updated(self, html: str) -> Optional[str]:
+        """Extract 'last updated' or 'effective date' from policy."""
+        try:
+            soup = BeautifulSoup(html, 'lxml')
+            text = soup.get_text()
+            
+            patterns = [
+                r'(?:last updated|last modified|updated|effective date|last revised)[\s:]*([A-Za-z]+ \d{1,2},? \d{4})',
+                r'(?:last updated|last modified|updated|effective date|last revised)[\s:]*(\d{1,2}/\d{1,2}/\d{4})',
+                r'(?:last updated|last modified|updated|effective date|last revised)[\s:]*(\d{4}-\d{2}-\d{2})',
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+            
+            return None
+        except:
+            return None
+    
+    def _extract_clauses(self, html: str, url: str, doc_type: str, last_updated: Optional[str]) -> list[Clause]:
+        """Extract individual clauses from HTML with full context."""
         clauses = []
         
         try:
@@ -92,18 +114,25 @@ class Extraction:
                 
                 paragraphs = self._split_into_paragraphs(text)
                 
-                for para_text in paragraphs:
+                for i, para_text in enumerate(paragraphs):
                     if len(para_text.strip()) < 50:
                         continue
                     
                     clause_id = self._generate_clause_id(url, paragraph_index, para_text)
+                    
+                    context_before = paragraphs[i-1] if i > 0 else ""
+                    context_after = paragraphs[i+1] if i < len(paragraphs) - 1 else ""
                     
                     clause = Clause(
                         id=clause_id,
                         text=para_text,
                         section_title=heading,
                         paragraph_index=paragraph_index,
-                        document_url=url
+                        document_url=url,
+                        document_type=doc_type,
+                        last_updated=last_updated,
+                        context_before=context_before,
+                        context_after=context_after
                     )
                     
                     clauses.append(clause)
@@ -118,12 +147,26 @@ class Extraction:
                 text = para.get_text(strip=True)
                 if len(text) > 50:
                     clause_id = self._generate_clause_id(url, idx, text)
+                    
+                    context_before = ""
+                    context_after = ""
+                    if idx > 0:
+                        prev_para = paragraphs[idx-1].get_text(strip=True)
+                        context_before = prev_para if len(prev_para) > 20 else ""
+                    if idx < len(paragraphs) - 1:
+                        next_para = paragraphs[idx+1].get_text(strip=True)
+                        context_after = next_para if len(next_para) > 20 else ""
+                    
                     clause = Clause(
                         id=clause_id,
                         text=text,
                         section_title="General",
                         paragraph_index=idx,
-                        document_url=url
+                        document_url=url,
+                        document_type=doc_type,
+                        last_updated=last_updated,
+                        context_before=context_before,
+                        context_after=context_after
                     )
                     clauses.append(clause)
         
