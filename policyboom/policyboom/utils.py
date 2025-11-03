@@ -6,41 +6,49 @@ from urllib.parse import quote
 
 def generate_text_fragment_url(base_url: str, text: str, max_words: int = None) -> str:
     """
-    Generate a verification URL that helps users find the clause using browser search.
+    Generate a URL with text fragment that auto-scrolls browsers to specific text.
     
-    Instead of fragile text fragments, this creates a URL to a verification page that:
-    1. Shows the snippet to search for
-    2. Copies it to clipboard
-    3. Opens the target page
-    4. User can press Ctrl+F to find it
+    Text fragments use the #:~:text= syntax which makes modern browsers:
+    1. Scroll to the matching text
+    2. Highlight it in yellow
     
     Args:
         base_url: The base URL of the document
-        text: The text to search for (matched clause pattern)
-        max_words: Maximum words to use (unused, kept for compatibility)
+        text: The text to create fragment from (should be unique snippet with matched content)
+        max_words: Maximum words to use in fragment (None = use all text, recommended for precision)
     
     Returns:
-        URL to verification page with snippet and target URL
+        URL with text fragment appended
         
     Example:
         >>> generate_text_fragment_url(
         ...     "https://example.com/policy",
-        ...     "agree to binding arbitration"
+        ...     "agree to binding arbitration and waive"
         ... )
-        'http://localhost:5000/verify?url=https%3A%2F%2Fexample.com%2Fpolicy&snippet=agree+to+binding+arbitration'
+        'https://example.com/policy#:~:text=agree%20to%20binding%20arbitration%20and%20waive'
     """
     # Clean and normalize text
     clean_text = re.sub(r'\s+', ' ', text.strip())
     
-    # URL encode both the target URL and the snippet
-    encoded_url = quote(base_url, safe='')
-    encoded_snippet = quote(clean_text)
+    # Use all words for maximum precision (unless max_words specified)
+    if max_words is not None:
+        words = clean_text.split()[:max_words]
+        fragment_text = ' '.join(words)
+    else:
+        # Use the full snippet for precise matching
+        fragment_text = clean_text
     
-    # Generate verification page URL
-    # Note: In production, replace localhost:5000 with actual domain
-    verify_base = "http://localhost:5000/verify"
+    # IMPORTANT: Do NOT lowercase - text fragments are case-sensitive
+    # and must match the exact case as it appears on the live page
     
-    return f"{verify_base}?url={encoded_url}&snippet={encoded_snippet}"
+    # URL encode the fragment
+    encoded_fragment = quote(fragment_text)
+    
+    # Remove any existing fragments from base URL
+    base_url = base_url.split('#')[0]
+    
+    # Append text fragment
+    return f"{base_url}#:~:text={encoded_fragment}"
 
 
 def extract_unique_snippet(text: str, min_words: int = 3, max_words: int = 7) -> str:
