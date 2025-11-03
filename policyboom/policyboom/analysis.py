@@ -98,43 +98,21 @@ class Analysis:
             if match:
                 snippet = self._extract_snippet(clause.text, match.start(), match.end())
                 
-                # Generate text fragment URL using the matched text for precise targeting
-                # Guarantee matched text is included by centering on it
+                # Generate text fragment URL using just the matched text
+                # Simpler approach: use the actual matched text from the clause
                 import re as snippet_re
                 
                 # Normalize whitespace in the entire clause first
                 normalized_text = snippet_re.sub(r'\s+', ' ', clause.text)
                 
-                # Find the match in the normalized text (using case-insensitive search)
-                # This ensures pattern matching works while preserving original case
+                # Find the match in the normalized text (case-insensitive search)
                 normalized_match = rule.pattern.search(normalized_text.lower())
                 if normalized_match:
-                    # Extract snippet directly using character positions
-                    # This is simpler and more reliable than word-based extraction
+                    # Extract just the matched portion (preserves original case)
+                    matched_text = normalized_text[normalized_match.start():normalized_match.end()]
                     
-                    # Get 50 characters before and after the match for context
-                    context_chars = 50
-                    snippet_start = max(0, normalized_match.start() - context_chars)
-                    snippet_end = min(len(normalized_text), normalized_match.end() + context_chars)
-                    
-                    # Extract the raw snippet with match in the middle
-                    raw_snippet = normalized_text[snippet_start:snippet_end]
-                    
-                    # Trim to complete words at the boundaries
-                    # Only trim if we're mid-word (not at text boundaries)
-                    if snippet_start > 0 and raw_snippet and not raw_snippet[0].isspace():
-                        # Find first space and trim before it
-                        first_space = raw_snippet.find(' ')
-                        if first_space > 0:
-                            raw_snippet = raw_snippet[first_space + 1:]
-                    
-                    if snippet_end < len(normalized_text) and raw_snippet and not raw_snippet[-1].isspace():
-                        # Find last space and trim after it
-                        last_space = raw_snippet.rfind(' ')
-                        if last_space > 0:
-                            raw_snippet = raw_snippet[:last_space]
-                    
-                    unique_snippet = raw_snippet.strip()
+                    # Use the matched text as the fragment (browsers are good at finding short exact matches)
+                    unique_snippet = matched_text.strip()
                 else:
                     # Fallback: use first 10 words
                     unique_snippet = ' '.join(normalized_text.split()[:10])
