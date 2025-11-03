@@ -1,0 +1,23 @@
+| 1  | WhatsApp               | [https://www.whatsapp.com](https://www.whatsapp.com)                                                        |
+| 2  | WeChat                 | [https://www.wechat.com](https://www.wechat.com)                                                            |
+| 3  | Facebook Messenger     | [https://www.messenger.com](https://www.messenger.com)                ([Wikipedia][1])                      |
+| 4  | Telegram               | [https://telegram.org](https://telegram.org)                                                                |
+| 5  | Snapchat               | [https://www.snapchat.com](https://www.snapchat.com)                                                        |
+| 6  | QQ                     | [https://www.qq.com](https://www.qq.com)                                                                    |
+| 7  | LINE                   | [https://line.me](https://line.me)                                                                          |
+| 8  | Discord                | [https://discord.com](https://discord.com)                                                                  |
+| 9  | Zalo                   | [https://zalo.me](https://zalo.me)                                                                          |
+| 10 | Viber                  | [https://www.viber.com](https://www.viber.com)                                                              |
+| 11 | KakaoTalk              | [https://www.kakaocorp.com/service/KakaoTalk](https://www.kakaocorp.com/service/KakaoTalk) ([Wikipedia][2]) |
+| 12 | Signal                 | [https://signal.org](https://signal.org)                                                                    |
+| 13 | Threema                | [https://threema.ch](https://threema.ch)                                                                    |
+| 14 | Wire                   | [https://wire.com](https://wire.com)                                                                        |
+| 15 | Dust                   | [https://www.useondust.com](https://www.useondust.com)                                                      |
+| 16 | Eitaa                  | [https://eitaa.com](https://eitaa.com)                         ([Wikipedia][3])                             |
+| 17 | Soroush Plus           | [https://splus.ir](https://splus.ir)                          ([Wikipedia][4])                              |
+| 18 | Kik Messenger          | [https://www.kik.com](https://www.kik.com)                       ([Wikipedia][5])                           |
+| 19 | Yabb                   | [https://yabb.com](https://yabb.com)                          ([yabb.com][6])                               |
+| 20 | Slack                  | [https://slack.com](https://slack.com)                                                                      |
+| 21 | Microsoft Teams        | [https://www.microsoft.com/en/microsoft-teams/](https://www.microsoft.com/en/microsoft-teams/)              |
+| 22 | Apple‑iMessage         | [https://www.apple.com/messages](https://www.apple.com/messages)                                            |
+| 23 | Element (Matrix)       | [https://element.io](https://element.io)       
