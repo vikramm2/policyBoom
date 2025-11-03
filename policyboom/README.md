@@ -26,9 +26,11 @@ policyboom exec "scan('example.com').summarizeAll()"
 - 🔍 **Clause-Level Analysis** - Extracts individual clauses with unique IDs and metadata
 - ⚖️ **Severity Scoring** - Categorizes findings as High, Medium, or Low risk
 - 🏷️ **Category Tagging** - Identifies arbitration waivers, data sale, tracking, COPPA violations, etc.
+- 🔗 **Clickable Verification** - Source URLs with text fragments auto-scroll and highlight clauses in browser
+- 📅 **Policy Dating** - Automatically extracts "last updated" dates from documents
 - 💾 **Local Storage** - SQLite database for caching results (no cloud required)
 - ✨ **Beautiful Output** - Rich terminal formatting with colors and tables
-- 🔗 **Fluent API** - Chain commands with dot-notation for powerful queries
+- 🔄 **Fluent API** - Chain commands with dot-notation for powerful queries
 
 ## Installation
 
@@ -49,11 +51,14 @@ policyboom exec "scan('company.com').summarizeHigh()"
 # Filter by severity and category
 policyboom exec "scan('slack.com').summarizeMedium().category('dataSharing')"
 
-# Get metadata
+# Get metadata with policy URLs and dates
 policyboom exec "scan('stripe.com').summarizeAll().metadata()"
 
-# Find source links
-policyboom exec "scan('example.com').summarizeHigh().findLinks()"
+# Get full evidence for legal documentation
+policyboom exec "scan('example.com').summarizeHigh().withEvidence()"
+
+# Get detailed findings with all metadata
+policyboom exec "scan('slack.com').summarizeAll().detailed()"
 ```
 
 ### As a Python Library

@@ -63,7 +63,7 @@ def exec(expression: str):
       .summarizeAll()     - Get all findings
       .category(name)     - Filter by category
       .withEvidence()     - Include full supporting text and context
-      .detailed()         - Show all metadata (URLs, paragraphs, dates, evidence)
+      .detailed()         - Show all metadata (URLs, dates, evidence)
       .metadata()         - Get scan metadata with policy URLs and dates
       .findLinks()        - Include source links (default)
     
@@ -148,12 +148,24 @@ policyboom exec "scan('company.com').summarizeHigh()"
 - `retention` - Data retention policies
 - `childrenData` - Children's data (COPPA)
 
+## Evidence & Verification
+
+PolicyBoom generates **clickable source URLs** with text fragments that:
+- Auto-scroll your browser to the exact clause
+- Highlight the text in yellow for verification
+- Work in Chrome, Edge, Safari, and modern browsers
+
+Example URL: `https://signal.org/legal/#:~:text=arbitration`
+
+Click any Source URL to see the clause in its original context!
+
 ## Tips
 
 - Always use quotes around the domain name
 - Chain methods with dot-notation for filtering
 - Results are cached locally in ~/.policyboom/scans.db
-- Use `metadata()` to see summary statistics
+- Click Source URLs to verify clauses in your browser
+- Use `metadata()` to see summary statistics and policy dates
 
 For more help: `policyboom --help`
 """
