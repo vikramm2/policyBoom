@@ -98,8 +98,54 @@ class Analysis:
             if match:
                 snippet = self._extract_snippet(clause.text, match.start(), match.end())
                 
-                # Generate text fragment URL for browser auto-scroll
-                fragment_url = generate_text_fragment_url(clause.document_url, clause.text)
+                # Generate text fragment URL using the matched text for precise targeting
+                # Guarantee matched text is included by centering on it
+                import re as snippet_re
+                
+                # Normalize whitespace in the entire clause first
+                normalized_text = snippet_re.sub(r'\s+', ' ', clause.text)
+                
+                # Find the match in the normalized text
+                normalized_match = rule.pattern.search(normalized_text.lower())
+                if normalized_match:
+                    # Get the matched substring
+                    matched_substring = normalized_text[normalized_match.start():normalized_match.end()]
+                    
+                    # Split clause into words
+                    words = normalized_text.split()
+                    
+                    # Find which words contain or surround the match
+                    char_pos = 0
+                    match_word_start = 0
+                    match_word_end = len(words)
+                    
+                    for i, word in enumerate(words):
+                        word_start = char_pos
+                        word_end = char_pos + len(word)
+                        
+                        # If this word overlaps with match start
+                        if word_start <= normalized_match.start() < word_end:
+                            match_word_start = i
+                        
+                        # If this word overlaps with match end
+                        if word_start < normalized_match.end() <= word_end:
+                            match_word_end = i + 1
+                            break
+                        
+                        char_pos = word_end + 1  # +1 for space
+                    
+                    # Take 5 words before match, the matched words, and 5 words after
+                    context_words = 5
+                    snippet_start_word = max(0, match_word_start - context_words)
+                    snippet_end_word = min(len(words), match_word_end + context_words)
+                    
+                    # Build snippet centered on matched words
+                    unique_snippet = ' '.join(words[snippet_start_word:snippet_end_word])
+                else:
+                    # Fallback: use first 10 words
+                    unique_snippet = ' '.join(normalized_text.split()[:10])
+                
+                fragment_url = generate_text_fragment_url(clause.document_url, unique_snippet)
                 
                 finding = Finding(
                     clause_id=clause.id,

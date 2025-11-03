@@ -4,7 +4,7 @@ import re
 from urllib.parse import quote
 
 
-def generate_text_fragment_url(base_url: str, text: str, max_words: int = 5) -> str:
+def generate_text_fragment_url(base_url: str, text: str, max_words: int = None) -> str:
     """
     Generate a URL with text fragment that auto-scrolls browsers to specific text.
     
@@ -14,8 +14,8 @@ def generate_text_fragment_url(base_url: str, text: str, max_words: int = 5) -> 
     
     Args:
         base_url: The base URL of the document
-        text: The full text to create fragment from
-        max_words: Maximum words to use in fragment (default 5)
+        text: The text to create fragment from (should be unique snippet with matched content)
+        max_words: Maximum words to use in fragment (None = use all text, recommended for precision)
     
     Returns:
         URL with text fragment appended
@@ -23,16 +23,20 @@ def generate_text_fragment_url(base_url: str, text: str, max_words: int = 5) -> 
     Example:
         >>> generate_text_fragment_url(
         ...     "https://example.com/policy",
-        ...     "Users agree to binding arbitration"
+        ...     "agree to binding arbitration and waive"
         ... )
-        'https://example.com/policy#:~:text=users%20agree%20to%20binding%20arbitration'
+        'https://example.com/policy#:~:text=agree%20to%20binding%20arbitration%20and%20waive'
     """
     # Clean and normalize text
     clean_text = re.sub(r'\s+', ' ', text.strip())
     
-    # Extract unique, identifying snippet (first N words)
-    words = clean_text.split()[:max_words]
-    fragment_text = ' '.join(words)
+    # Use all words for maximum precision (unless max_words specified)
+    if max_words is not None:
+        words = clean_text.split()[:max_words]
+        fragment_text = ' '.join(words)
+    else:
+        # Use the full snippet for precise matching
+        fragment_text = clean_text
     
     # Lowercase for better matching
     fragment_text = fragment_text.lower()
