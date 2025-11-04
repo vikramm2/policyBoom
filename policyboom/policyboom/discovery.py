@@ -3,8 +3,12 @@
 import httpx
 from bs4 import BeautifulSoup
 import tldextract
+import time
+import random
 from typing import Set
 from urllib.parse import urljoin, urlparse
+
+from .user_agents import get_headers
 
 
 class Discovery:
@@ -46,7 +50,7 @@ class Discovery:
         valid_count = 0
         
         try:
-            response = self.client.get(seed_url)
+            response = self.client.get(seed_url, headers=get_headers())
             response.raise_for_status()
             
             discovered_urls = self._extract_policy_links(seed_url, response.text)
@@ -60,6 +64,9 @@ class Discovery:
                 # Skip if we already found enough valid documents
                 if valid_count >= self.max_valid_docs:
                     break
+                
+                # Add random delay (1-3 seconds) to mimic human behavior
+                time.sleep(random.uniform(1.0, 3.0))
                 
                 # Check if URL exists before adding
                 if self._url_exists(url):
@@ -99,13 +106,34 @@ class Discovery:
         return links
     
     def _generate_fallback_urls(self, base_url: str) -> Set[str]:
-        """Generate common policy URL patterns."""
+        """Generate common policy URL patterns including mobile/AMP versions."""
         parsed = urlparse(base_url)
         base = f"{parsed.scheme}://{parsed.netloc}"
         
+        # Extract domain parts for mobile variants
+        ext = tldextract.extract(base_url)
+        domain = ext.domain
+        suffix = ext.suffix
+        
         fallbacks = set()
+        
+        # Standard paths on main domain
         for path in self.COMMON_PATHS:
             fallbacks.add(f"{base}{path}")
+            
+            # Try mobile versions (m.domain.com)
+            if not ext.subdomain or ext.subdomain != 'm':
+                mobile_url = f"{parsed.scheme}://m.{domain}.{suffix}{path}"
+                fallbacks.add(mobile_url)
+            
+            # Try AMP versions
+            fallbacks.add(f"{base}{path}?amp=1")
+            fallbacks.add(f"{base}{path}?print=true")
+        
+        # Try mobile domain without paths
+        if not ext.subdomain or ext.subdomain != 'm':
+            fallbacks.add(f"{parsed.scheme}://m.{domain}.{suffix}/privacy")
+            fallbacks.add(f"{parsed.scheme}://m.{domain}.{suffix}/terms")
         
         return fallbacks
     
@@ -161,8 +189,8 @@ class Discovery:
             return False
         
         try:
-            # Try HEAD request first (lightweight)
-            response = self.client.head(url, timeout=5)
+            # Try HEAD request first (lightweight) with random user-agent
+            response = self.client.head(url, timeout=5, headers=get_headers())
             
             # Accept 2xx and 3xx status codes
             if 200 <= response.status_code < 400:
@@ -170,8 +198,8 @@ class Discovery:
             
             # If HEAD not allowed (405/501), fallback to GET with minimal download
             if response.status_code in (405, 501):
-                # Try GET request but limit download
-                response = self.client.get(url, timeout=5)
+                # Try GET request but limit download with new headers
+                response = self.client.get(url, timeout=5, headers=get_headers())
                 if 200 <= response.status_code < 400:
                     return True
             
