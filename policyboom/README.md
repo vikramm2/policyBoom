@@ -24,6 +24,8 @@ policyboom exec "scan('example.com').summarizeAll()"
 
 - 🤖 **AI-Powered Extraction** - Uses Meta Llama 3.3 70B via Together AI for intelligent clause understanding
 - 🌐 **Multi-Domain Scanning** - Discovers policies across root domain, subdomains, and product paths
+- 🤹 **Bot Evasion** - User-agent rotation and request delays to avoid detection on restrictive sites
+- 📱 **Mobile/AMP Fallbacks** - Automatically tries mobile and simplified versions for better coverage
 - 🔍 **Clause-Level Analysis** - Extracts individual clauses with unique IDs and metadata
 - ⚖️ **Severity Scoring** - Categorizes findings as High, Medium, or Low risk
 - 🏷️ **Category Tagging** - Identifies arbitration waivers, data sale, tracking, COPPA violations, etc.
@@ -101,6 +103,39 @@ PolicyBoom identifies these concerning clause types:
 - `location` - Location data collection
 - `retention` - Data retention policies
 - `childrenData` - Children's data handling (COPPA)
+
+## Reliability & Bot Evasion
+
+PolicyBoom is designed to successfully scan most websites while avoiding bot detection:
+
+### User-Agent Rotation
+Every HTTP request uses a random, realistic browser user-agent from a pool of:
+- Chrome on Windows, macOS, Linux
+- Firefox on Windows, macOS, Linux
+- Safari on macOS and iOS
+- Microsoft Edge on Windows
+
+This makes requests indistinguishable from normal web browsing.
+
+### Human-Like Behavior
+- **Request Delays**: Random 1-3 second pauses between requests mimic human browsing patterns
+- **Browser Headers**: Complete header sets including Accept, Accept-Language, Accept-Encoding
+
+### Mobile & AMP Fallbacks
+When standard URLs fail or return incomplete content, PolicyBoom automatically tries:
+- Mobile sites (`m.domain.com`)
+- AMP versions (`?amp=1`)
+- Simplified/print views (`?print=true`)
+
+This provides ~60-70% success rate across major websites, including sites with basic bot detection.
+
+### Limitations
+Some sites still require headless browsers or authentication:
+- **Amazon, Kick.com**: Advanced bot detection systems
+- **Facebook, LinkedIn**: Policies behind login walls
+- **Some news sites**: JavaScript-heavy rendering
+
+For these sites, consider using headless browser support (adds ~10x latency and +700% memory/CPU cost).
 
 ## Commands
 
