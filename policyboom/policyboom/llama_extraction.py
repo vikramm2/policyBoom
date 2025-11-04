@@ -5,6 +5,7 @@ import httpx
 from typing import Optional
 from openai import OpenAI
 from .models import Document, Clause
+from .user_agents import get_headers
 from datetime import datetime
 import json
 import re
@@ -44,8 +45,8 @@ class LlamaExtractor:
         Returns Document with intelligently parsed clauses.
         """
         try:
-            # Fetch the HTML
-            response = self.http_client.get(url)
+            # Fetch the HTML with random user-agent
+            response = self.http_client.get(url, headers=get_headers())
             response.raise_for_status()
             
             # Validate content before processing
