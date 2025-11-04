@@ -85,11 +85,15 @@ policyboom/
 
 **Core Pipeline:**
 1. **Discovery** → Finds all policy documents across domains/subdomains
+   - **User-Agent Rotation**: Random browser user-agents (Chrome, Firefox, Safari) to avoid bot detection
+   - **Request Delays**: 1-3 second random delays between requests to mimic human behavior
+   - **Mobile/AMP Fallbacks**: Tries m.domain.com, ?amp=1, and ?print=true variants for better coverage
    - HEAD request validation with GET fallback (405/501 errors)
    - Intelligent caching (only true failures: 404, 410, network errors)
    - Early stopping after finding 3 valid documents (70% reduction in wasted calls)
    - Optimized fallback URLs (5 most common patterns)
 2. **Extraction** → AI-powered (Llama 3.3 70B) or regex-based parsing into individual clauses with metadata
+   - **User-Agent Rotation**: Every extraction request uses realistic browser headers
    - HTML content validation (Content-Type, length, structure)
    - Returns all fetched documents for complete transparency
 3. **Analysis** → Uses AI categorization + severity from extraction, or applies regex rules
