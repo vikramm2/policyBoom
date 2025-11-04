@@ -157,6 +157,8 @@ Document text:
 Return valid JSON only, no markdown formatting:"""
 
         try:
+            content = None  # Initialize for error handling
+            
             # Call Llama via Together AI
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -215,7 +217,7 @@ Return valid JSON only, no markdown formatting:"""
         
         except json.JSONDecodeError as e:
             print(f"Failed to parse AI response as JSON: {e}")
-            if 'content' in locals() and content:
+            if content is not None:
                 print(f"Response was: {content[:500]}")
             return []
         except Exception as e:
