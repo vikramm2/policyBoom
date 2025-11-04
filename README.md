@@ -1,120 +1,178 @@
-# policyBoom - Terms & Privacy Policy Analyzer
+# PolicyBoom 💥
 
-## Overview
+> Enterprise legal risk intelligence CLI for analyzing Terms of Service and Privacy Policies
 
-<img width="1227" height="959" alt="Screenshot 2025-10-08 at 11 04 32 PM" src="https://github.com/user-attachments/assets/8985fd71-2c25-4e58-9e48-3ab87dfa8bbc" />
+PolicyBoom automatically discovers, analyzes, and scores concerning legal clauses across multi-domain company policies using a fluent dot-notation API.
 
+## Quick Start
 
-policyBoom is a web service that automatically discovers, fetches, and analyzes Terms of Service and Privacy Policy pages from websites. Given a seed URL, the system crawls the same domain to find policy documents, extracts their content, and identifies concerning clauses using pattern-based rules. The service is designed for resilience - network failures, timeouts, or malformed pages never crash the service. Results are cached in SQLite for performance.
-[
-Video Link to Alpha Demo ](https://drive.google.com/file/d/1zTQFvBngjs65efzHXXfX8FVL4f2w_uMJ/view?usp=sharing)
+```bash
+# Install
+pip install policyboom
 
+# Scan a company's policies
+policyboom exec "scan('slack.com').summarizeHigh()"
 
-## User Preferences
+# Filter by category
+policyboom exec "scan('stripe.com').summarizeHigh().category('arbitration')"
 
-Preferred communication style: Simple, everyday language.
+# Get all findings
+policyboom exec "scan('example.com').summarizeAll()"
+```
 
-## System Architecture
+## Features
 
-### Application Framework
-- **FastAPI** serves as the web framework with automatic OpenAPI documentation
-- **Uvicorn** ASGI server handles HTTP requests
-- Static file serving for a minimal demo UI at `/static/index.html`
+- 🤖 **AI-Powered Extraction** - Uses Meta Llama 3.3 70B via Together AI for intelligent clause understanding
+- 🌐 **Multi-Domain Scanning** - Discovers policies across root domain, subdomains, and product paths
+- 🤹 **Bot Evasion** - User-agent rotation and request delays to avoid detection on restrictive sites
+- 📱 **Mobile/AMP Fallbacks** - Automatically tries mobile and simplified versions for better coverage
+- 🔍 **Clause-Level Analysis** - Extracts individual clauses with unique IDs and metadata
+- ⚖️ **Severity Scoring** - Categorizes findings as High, Medium, or Low risk
+- 🏷️ **Category Tagging** - Identifies arbitration waivers, data sale, tracking, COPPA violations, etc.
+- 🔗 **Clickable Verification** - Source URLs with text fragments auto-scroll and highlight clauses in browser
+- 📅 **Policy Dating** - Automatically extracts "last updated" dates from documents
+- 💾 **Local Storage** - SQLite database for caching results (no cloud required)
+- ✨ **Beautiful Output** - Rich terminal formatting with colors and tables
+- 🔄 **Fluent API** - Chain commands with dot-notation for powerful queries
 
-### Core Processing Pipeline
+## Installation
 
-The system follows a 4-stage pipeline:
+```bash
+pip install policyboom
+```
 
-1. **Discovery** (`crawler.py`): 
-   - Finds policy-related URLs by scraping anchor tags from the seed page
-   - Filters links to same registrable domain using `tldextract`
-   - Adds fallback URLs (`/privacy`, `/terms`, etc.) to ensure coverage
-   - Limits discovery to `CRWLR_MAX_DOCS` documents (default: 4)
+### Setting Up AI Extraction
 
-2. **Fetching** (`crawler.py`):
-   - HTTP requests with configurable timeout (default: 15s)
-   - User-agent string configurable via `CRWLR_UA`
-   - Response size limited to `CRWLR_MAX_BYTES` (default: 1MB)
-   - Graceful error handling with categorized failures (timeout, 4xx, 5xx, network, parse)
+PolicyBoom uses Meta Llama 3.3 70B for intelligent clause extraction via Together AI's free tier:
 
-3. **Extraction** (`extract.py`):
-   - Uses `readability-lxml` to extract main content from noisy HTML
-   - Sections content by headings (h1-h4) with associated paragraph/list text
-   - BeautifulSoup with lxml parser for DOM traversal
-   - Prioritizes semantic containers (main, article, #content, .content)
+1. Get your free API key from https://api.together.ai/settings/api-keys
+2. Set the environment variable:
+   ```bash
+   export TOGETHER_API_KEY="your-api-key-here"
+   ```
+3. Run PolicyBoom - it will automatically use AI extraction when the API key is present
 
-4. **Analysis** (`analyze.py`):
-   - Rule-based pattern matching using regex against lowercased text
-   - Extensible "rule packs" system (currently: 'base' pack with 6 rules)
-   - Tags sections with findings: data_sale, arbitration, tracking, location, retention, children
-   - Severity levels: low, medium, high
+**Fallback**: If no API key is set, PolicyBoom uses regex-based extraction (less accurate but works offline).
 
-### Data Storage
+## Usage
 
-- **SQLite database** for caching analyzed documents
-- Two tables:
-  - `documents`: Stores URL, fetch timestamp, title, content length
-  - `findings`: Stores section headings, text, and JSON-serialized tags
-- Database path configurable via `CRWLR_DB_PATH` (default: `crwlr.db`)
-- Cache-aware API responses include `cached: true/false` flag
+### CLI with Dot-Notation
 
-### API Design
+The primary interface uses a fluent camelCase API:
 
-**Primary endpoint**: `GET /analyze`
-- Query params: `url` (required), `packs` (optional, comma-separated)
-- Returns: seed URL, discovered policy links, results array, errors array
-- Response model uses Pydantic for validation and automatic schema generation
+```bash
+# Basic scan
+policyboom exec "scan('company.com').summarizeHigh()"
 
-**Models**:
-- `AnalyzeResponse`: Top-level response with seed, policy_links, results, errors
-- `Result`: Per-document findings with URL, title, cached flag, findings list
-- `Finding`: Section-level with heading, text, snippet (truncated), tags
-- `ErrorItem`: Failed URLs with categorized failure reason
-- `Tag`: Rule match with id, label, severity
+# Filter by severity and category
+policyboom exec "scan('slack.com').summarizeMedium().category('dataSharing')"
 
-### Utility Functions
+# Get metadata with policy URLs and dates
+policyboom exec "scan('stripe.com').summarizeAll().metadata()"
 
-**Domain validation** (`utils.py`):
-- `same_registrable_domain()`: Compares registrable domains (handles subdomains)
-- `is_probable_policy_path()`: Keyword matching for policy-related paths
-- `absolutize()`: Resolves relative URLs using `urllib.parse.urljoin`
-- `clean_text()`: Normalizes whitespace in extracted text
+# Get full evidence for legal documentation
+policyboom exec "scan('example.com').summarizeHigh().withEvidence()"
 
-### Configuration via Environment Variables
+# Get detailed findings with all metadata
+policyboom exec "scan('slack.com').summarizeAll().detailed()"
+```
 
-- `CRWLR_TIMEOUT_SECONDS`: HTTP request timeout (default: 15)
-- `CRWLR_MAX_DOCS`: Maximum policy documents to analyze (default: 4)
-- `CRWLR_UA`: User-agent string for requests
-- `CRWLR_MAX_BYTES`: Maximum response size (default: 1MB)
-- `CRWLR_DB_PATH`: SQLite database location (default: crwlr.db)
+### As a Python Library
 
-### Error Handling Strategy
+```python
+from policyboom import scan
 
-The system categorizes failures into 5 types:
-- **timeout**: Request exceeded time limit
-- **http_4xx**: Client errors (404, 403, etc.)
-- **http_5xx**: Server errors
-- **network**: Connection failures, DNS errors
-- **parse**: HTML parsing failures
+# Scan and analyze
+result = scan("slack.com").summarizeHigh().category("arbitration")
 
-All errors are captured and returned in the `errors` array - the service never crashes on individual document failures.
+# Access findings
+for finding in result.findings:
+    print(f"{finding.severity}: {finding.text}")
+    
+# Export results
+result.export("output.json", format="json")
+```
 
-## External Dependencies
+## Categories
 
-### Python Libraries
-- **fastapi==0.115.0**: Web framework with async support
-- **uvicorn==0.30.6**: ASGI server
-- **requests==2.32.3**: HTTP client for fetching pages
-- **beautifulsoup4==4.12.3**: HTML parsing and DOM traversal
-- **lxml==5.3.0**: Fast XML/HTML parser backend for BeautifulSoup
-- **readability-lxml==0.8.1**: Content extraction from noisy web pages
-- **tldextract==5.1.2**: Domain/subdomain parsing and comparison
-- **pytest==8.3.3**: Testing framework
+PolicyBoom identifies these concerning clause types:
 
-### Storage
-- **SQLite 3**: Embedded database for caching (no external service required)
+- `arbitration` - Forced arbitration / class action waivers
+- `dataSale` - Third-party data selling
+- `tracking` - Advertising and behavioral tracking
+- `location` - Location data collection
+- `retention` - Data retention policies
+- `childrenData` - Children's data handling (COPPA)
 
-### Testing Infrastructure
-- Test fixtures include sample HTML documents (minimal and Chrome-style formatting)
-- Tests cover: API endpoints, domain filtering, rule matching, fallback URL generation
-- Uses FastAPI's TestClient for integration testing
+## Reliability & Bot Evasion
+
+PolicyBoom is designed to successfully scan most websites while avoiding bot detection:
+
+### User-Agent Rotation
+Every HTTP request uses a random, realistic browser user-agent from a pool of:
+- Chrome on Windows, macOS, Linux
+- Firefox on Windows, macOS, Linux
+- Safari on macOS and iOS
+- Microsoft Edge on Windows
+
+This makes requests indistinguishable from normal web browsing.
+
+### Human-Like Behavior
+- **Request Delays**: Random 1-3 second pauses between requests mimic human browsing patterns
+- **Browser Headers**: Complete header sets including Accept, Accept-Language, Accept-Encoding
+
+### Mobile & AMP Fallbacks
+When standard URLs fail or return incomplete content, PolicyBoom automatically tries:
+- Mobile sites (`m.domain.com`)
+- AMP versions (`?amp=1`)
+- Simplified/print views (`?print=true`)
+
+This provides ~60-70% success rate across major websites, including sites with basic bot detection.
+
+### Limitations
+Some sites still require headless browsers or authentication:
+- **Amazon, Kick.com**: Advanced bot detection systems
+- **Facebook, LinkedIn**: Policies behind login walls
+- **Some news sites**: JavaScript-heavy rendering
+
+For these sites, consider using headless browser support (adds ~10x latency and +700% memory/CPU cost).
+
+## Commands
+
+```bash
+# Get help
+policyboom --help
+
+# Run interactive guide
+policyboom guide
+
+# View examples
+policyboom examples
+
+# Export scan results
+policyboom export <scan_id> --format json
+```
+
+## Development
+
+```bash
+# Clone repository
+git clone https://github.com/policyboom/policyboom
+cd policyboom
+
+# Install in development mode
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+```
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+- Documentation: https://policyboom.dev
+- Issues: https://github.com/policyboom/policyboom/issues
+- Discussions: https://github.com/policyboom/policyboom/discussions
