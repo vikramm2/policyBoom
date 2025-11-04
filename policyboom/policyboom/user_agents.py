@@ -50,7 +50,7 @@ def get_random_user_agent() -> str:
     return random.choice(USER_AGENTS)
 
 
-def get_headers(additional_headers: dict = None) -> dict:
+def get_headers(additional_headers: dict | None = None) -> dict:
     """
     Get HTTP headers with a random user-agent and common browser headers.
     

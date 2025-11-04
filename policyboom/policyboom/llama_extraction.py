@@ -33,7 +33,7 @@ class LlamaExtractor:
         # Use Llama 3.3 70B for best extraction quality
         self.model = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
     
-    def close(self):
+    def cleanup(self):
         """Close the HTTP client."""
         if hasattr(self, 'http_client'):
             self.http_client.close()
@@ -215,7 +215,7 @@ Return valid JSON only, no markdown formatting:"""
         
         except json.JSONDecodeError as e:
             print(f"Failed to parse AI response as JSON: {e}")
-            if 'content' in locals():
+            if 'content' in locals() and content:
                 print(f"Response was: {content[:500]}")
             return []
         except Exception as e:
